@@ -27,6 +27,17 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
 
+    @app.errorhandler(500)
+    def handle_server_error(error):
+        from flask import flash, redirect, url_for
+        from flask_login import current_user
+
+        app.logger.exception("unhandled_500: %s", error)
+        if getattr(current_user, "is_authenticated", False):
+            flash("حدث خطأ غير متوقع. أعد المحاولة أو راجع الإعدادات.", "error")
+            return redirect(url_for("main.home"))
+        return redirect(url_for("main.index"))
+
     @app.before_request
     def protect_forms():
         if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:

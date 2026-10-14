@@ -20,7 +20,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
     OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
     FLASK_VERIFY_SSL = os.getenv("FLASK_VERIFY_SSL", "false").lower() == "true"
     DEBUG = os.getenv("FLASK_DEBUG", "false").lower() == "true"

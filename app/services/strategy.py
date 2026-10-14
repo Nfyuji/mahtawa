@@ -38,22 +38,36 @@ class StrategyGenerator:
     def generate(self, brand: Brand) -> Strategy:
         start = brand.campaign_start_date or date.today()
         platforms = brand.platforms or ["tiktok", "instagram"]
-        item_count = 30
-        brief = build_strategy_brief(brand, item_count)
+        # Render free tier dies on huge GPT payloads; keep GPT packs compact.
+        gpt_count = 12
+        local_count = 30
+        brief = build_strategy_brief(brand, local_count)
+        fallback_note = ""
         if self.openai_api_key:
-            ideas = GPTIdeaGenerator(
-                api_key=self.openai_api_key,
-                base_url=self.openai_base_url,
-                model=self.openai_model,
-            ).generate(brand, brief, item_count)
-            self.generation_source = "openai"
+            try:
+                ideas = GPTIdeaGenerator(
+                    api_key=self.openai_api_key,
+                    base_url=self.openai_base_url,
+                    model=self.openai_model,
+                    timeout=55,
+                ).generate(brand, brief, gpt_count)
+                self.generation_source = "openai"
+                item_count = gpt_count
+            except Exception as exc:
+                # Never crash the web worker on Render; ship a local plan instead.
+                ideas = build_idea_bank(brand, brief["pillars"], local_count)
+                self.generation_source = "local_fallback"
+                item_count = local_count
+                fallback_note = str(exc)[:160]
         else:
-            ideas = build_idea_bank(brand, brief["pillars"], item_count)
+            ideas = build_idea_bank(brand, brief["pillars"], local_count)
             self.generation_source = "local"
+            item_count = local_count
         brief["generation"] = {
             "source": self.generation_source,
             "model": self.openai_model if self.generation_source == "openai" else None,
             "count": item_count,
+            "fallback_note": fallback_note or None,
         }
         version = max((strategy.version or 1 for strategy in brand.strategies), default=0) + 1
 
@@ -69,6 +83,8 @@ class StrategyGenerator:
                 + (
                     f"الأفكار والسيناريوهات ولّدها {self.openai_model} من بيانات الشركة."
                     if self.generation_source == "openai"
+                    else "تعذر GPT مؤقتًا فاستُخدم المحرك المحلي لضمان ظهور خطة."
+                    if self.generation_source == "local_fallback"
                     else "استُخدم المحرك المحلي لأن مفتاح OpenAI غير مهيأ."
                 )
             ),

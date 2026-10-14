@@ -128,7 +128,25 @@ class GPTIdeaGenerator:
             },
         }
 
-        response = self._post(payload)
+        try:
+            response = self._post(payload)
+        except GPTGenerationError:
+            # Some accounts/models reject json_schema; retry with plain JSON object.
+            payload = {
+                **payload,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {
+                        **payload["messages"][0],
+                        "content": (
+                            payload["messages"][0]["content"]
+                            + f' أعد كائن JSON بالشكل {{"ideas":[...]}} وعدد الأفكار = {size}.'
+                        ),
+                    },
+                    payload["messages"][1],
+                ],
+            }
+            response = self._post(payload)
         try:
             content = response["choices"][0]["message"]["content"]
             parsed = json.loads(content)

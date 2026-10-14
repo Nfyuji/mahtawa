@@ -187,37 +187,34 @@ def strategy_page():
         if brand.profile_completeness < 55:
             flash("أكمل البيانات الأساسية قبل إنشاء الاستراتيجية.", "error")
             return redirect(url_for("main.brand_page"))
-        generator = _strategy_generator()
-        if not generator.openai_api_key:
-            flash(
-                "التوليد الآن يعتمد على GPT. أضف OPENAI_API_KEY في إعدادات بيئة الخادم أولًا.",
-                "error",
-            )
-            return redirect(url_for("main.settings_page"))
         try:
+            generator = _strategy_generator()
             strategy = generator.generate(brand)
-        except GPTGenerationError as exc:
-            db.session.rollback()
-            flash(f"تعذر التوليد عبر GPT: {exc}", "error")
-            return redirect(url_for("main.strategy_page"))
+            if generator.generation_source == "openai":
+                source = f"GPT ({current_app.config.get('OPENAI_MODEL', 'gpt-4o')})"
+                flash(
+                    f"تم إنشاء الإصدار {strategy.version}: {len(strategy.items)} فكرة عبر {source}.",
+                    "success",
+                )
+            elif generator.generation_source == "local_fallback":
+                flash(
+                    f"تعذر إكمال GPT، فتم إنشاء خطة محلية بديلة ({len(strategy.items)} فكرة). "
+                    "تحقق من المفتاح/الرصيد ثم أعد التوليد.",
+                    "error",
+                )
+            else:
+                flash(
+                    f"تم إنشاء خطة محلية ({len(strategy.items)} فكرة). "
+                    "أضف مفتاح OpenAI من الإعدادات لتفعيل GPT.",
+                    "success",
+                )
         except Exception:
             db.session.rollback()
             current_app.logger.exception("strategy_generation_failed")
             flash(
-                "انقطع التوليد أو استغرق وقتًا طويلًا. انتظر قليلًا ثم أعد المحاولة. "
-                "تأكد أن مفتاح OpenAI صالح وأن الرصيد كافٍ.",
+                "حدث خطأ أثناء التوليد. حدّث الصفحة وأعد المحاولة بعد قليل.",
                 "error",
             )
-            return redirect(url_for("main.strategy_page"))
-        source = (
-            f"GPT ({current_app.config.get('OPENAI_MODEL', 'gpt-4o')})"
-            if generator.generation_source == "openai"
-            else "المحرك المحلي — أضف OPENAI_API_KEY لتفعيل GPT"
-        )
-        flash(
-            f"تم إنشاء الإصدار {strategy.version}: {len(strategy.items)} فكرة عبر {source}.",
-            "success",
-        )
         return redirect(url_for("main.strategy_page"))
 
     strategy = brand.strategies[0] if brand.strategies else None

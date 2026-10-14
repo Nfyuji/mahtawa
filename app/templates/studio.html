@@ -65,12 +65,12 @@
     </section>
 
     <section class="card execution-card" id="execution-pack">
-      <div class="card-head"><div><span class="card-kicker">الحزمة الأساسية</span><h2>{{ meta.get('format_label', selected.content_type) }}</h2></div><button class="btn btn-small btn-ghost" type="button" data-copy-target="#execution-text">نسخ النص</button></div>
+      <div class="card-head"><div><span class="card-kicker">سيناريو التصوير الكامل</span><h2>{{ meta.get('format_label', 'سيناريو كامل') }}</h2></div><button class="btn btn-small btn-ghost" type="button" data-copy-target="#execution-text">نسخ السيناريو</button></div>
       <pre class="execution-text" id="execution-text">{{ selected.scenes }}</pre>
     </section>
 
     <div class="execution-grid">
-      <section class="card"><span class="card-kicker">النص / التلقين</span><h2>الكلام أو النسخة</h2><pre class="compact-text">{{ selected.script.body if selected.script else selected.script_body }}</pre></section>
+      <section class="card"><span class="card-kicker">تلقين متصل</span><h2>اقرأ بصوت عالٍ من البداية للنهاية</h2><pre class="compact-text">{{ selected.script.body if selected.script else selected.script_body }}</pre></section>
       <section class="card"><span class="card-kicker">دليل الإنتاج</span><h2>على الشاشة والمونتاج</h2><dl class="brief-list"><div><dt>النص المرئي</dt><dd>{{ selected.on_screen_text }}</dd></div><div><dt>التنفيذ</dt><dd>{{ selected.editing_notes }}</dd></div><div><dt>CTA</dt><dd>{{ selected.cta }}</dd></div></dl></section>
       <section class="card"><span class="card-kicker">إعادة الاستخدام</span><h2>استخرج قيمة إضافية</h2><p>{{ meta.get('repurpose','حوّل الفكرة إلى صيغة أخرى تناسب المنصة.') }}</p><div class="keyword-row">{% for keyword in selected.keywords or [] %}<span>{{ keyword }}</span>{% endfor %}</div></section>
       <section class="card"><span class="card-kicker">فرضية الاختبار</span><h2>لماذا ننشرها؟</h2><p>{{ selected.script.hypothesis if selected.script else 'اختبر الاستجابة الفعلية للجمهور.' }}</p><small class="evidence-note">حالة الدليل: {{ meta.get('evidence_label','فرضية') }}. لا تستخدم النتيجة كتوقع مضمون.</small></section>

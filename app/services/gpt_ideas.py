@@ -257,7 +257,9 @@ class GPTIdeaGenerator:
             "(أ) ألم محدد، (ب) فجوة فضول، (ج) رأي مخالف، "
             "(د) نتيجة أو آلية محددة بلا أرقام مختلقة، (هـ) افتتاح بصري. "
             "كل خطاف جملة واحدة، 5–12 كلمة، يبدأ من أول نفس، بلا تحية.\n"
-            "5) points ثلاث نقاط فعلية تكمل وعد الخطاف.\n"
+            "5) points ثلاث جمل منطوقة جاهزة للكاميرا (ليست تعليمات مخرج). "
+            "اكتب كأن المقدم يقولها: سمِّ الخطأ/الخطوة فعليًا، أثرها اليومي، "
+            "ثم التصحيح مع اسم النشاط. ممنوع: سمّ، وضّح، اعرض، اختم، اكتب…\n"
             "6) لا تقل الأفضل أو مضمون أو أرقام غير موجودة في البيانات.\n"
             "7) وزّع الأهداف، ولا تجعل كل الأفكار ترويجًا مباشرًا."
             + focus_block
@@ -334,14 +336,15 @@ class GPTIdeaGenerator:
         cta: str,
         name: str,
     ) -> dict[str, dict[str, str]]:
+        # Light stubs only — ScenarioEngine expands into a full spoken script.
         say = {
             "hook": hook.rstrip(".") + ".",
             "bridge": f"{problem}. والوعد: {promise}.",
             "p1": points[0].rstrip(".") + ".",
             "p2": points[1].rstrip(".") + ".",
             "p3": points[2].rstrip(".") + ".",
-            "proof": f"شوف هنا: {visual}.",
-            "cta": cta.rstrip(".") + ".",
+            "proof": f"شوف هنا داخل {name}: {visual}.",
+            "cta": f"{cta.rstrip('.')}. جرّب {name} بخطوة واحدة.",
         }
         screen = {
             "hook": self._screen_line(hook),

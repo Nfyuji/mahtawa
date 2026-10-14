@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}نظرة عامة — ContentForge{% endblock %}
+{% block content %}
+<div class="page-header dashboard-head">
+  <div>
+    <div class="eyebrow"><span></span>لوحة القرار</div>
+    <h1>صباح الاستراتيجية، {{ current_user.name.split()[0] }}</h1>
+    <p>{% if brand %}هذه صورة شهر {{ brand.name }}: ما قررناه، وما يجب اختباره، وما سيُنشر تاليًا.{% else %}ابدأ بملف الشركة لنحوّل المعرفة المتفرقة إلى خطة قابلة للتنفيذ.{% endif %}</p>
+  </div>
+  {% if brand %}<a class="btn btn-ghost" href="{{ url_for('main.brand_page') }}">تحديث بيانات الشركة</a>{% endif %}
+</div>
+
+{% if not brand %}
+<section class="empty-state hero-empty">
+  <span class="empty-icon">01</span>
+  <h2>ابدأ بملف شركتك</h2>
+  <p>سنحتاج العرض والجمهور والمشكلة والهدف وقدرة الإنتاج. بعدها نبني استراتيجية مخصصة بدل قالب عام.</p>
+  <a class="btn btn-large" href="{{ url_for('main.brand_page', onboarding='1') }}">إعداد الشركة ←</a>
+</section>
+{% elif not strategy %}
+<div class="dashboard-grid intro-grid">
+  <section class="card decision-card">
+    <span class="card-kicker">ملف الشركة</span>
+    <h2>{{ brand.profile_completeness }}% مكتمل</h2>
+    <div class="progress"><i style="width:{{ brand.profile_completeness }}%"></i></div>
+    <p>لدينا ما يكفي لإنشاء مسودة أولى. كلما أضفت دليلًا وميزة أوضح أصبحت الرسائل أكثر دقة.</p>
+    <a class="btn" href="{{ url_for('main.strategy_page') }}">إنشاء الاستراتيجية ←</a>
+  </section>
+  <section class="card checklist-card">
+    <span class="card-kicker">ما ستحصل عليه</span>
+    <ul class="check-list">
+      <li><b>قرار الشهر</b><span>هدف، KPI ومزيج رحلة العميل</span></li>
+      <li><b>4 محاور محتوى</b><span>وظيفة ونسبة لكل محور</span></li>
+      <li><b>خطة منصات</b><span>دور وصيغ وإشارة قياس</span></li>
+      <li><b>حزم تنفيذ</b><span>5 خطافات وسيناريو وCTA</span></li>
+    </ul>
+  </section>
+</div>
+{% else %}
+{% set objective = strategy_data.get('objective', {}) %}
+{% set plan = strategy_data.get('plan', {}) %}
+<section class="decision-hero">
+  <div>
+    <span class="tag tag-violet">الإصدار {{ strategy.version }} · {{ plan.get('status','مسودة') }}</span>
+    <small>قرار الشهر</small>
+    <h2>{{ objective.get('label', strategy.primary_goal) }}</h2>
+    <p>{{ objective.get('north_star', strategy.executive_summary) }}</p>
+  </div>
+  <div class="decision-kpi"><span>المؤشر الأساسي</span><strong>{{ objective.get('primary_kpi','يُحدد بعد خط الأساس') }}</strong><small>{{ strategy.month_start }} — {{ strategy.month_end }}</small></div>
+</section>
+
+<div class="metric-grid">
+  <div class="metric-card"><span>خطة التنفيذ</span><strong>{{ strategy.items|length }}</strong><small>قطعة خلال 30 يومًا</small></div>
+  <div class="metric-card"><span>محاور المحتوى</span><strong>{{ strategy.pillars|length }}</strong><small>موزعة على رحلة العميل</small></div>
+  <div class="metric-card"><span>المنصات</span><strong>{{ strategy_data.get('platforms', [])|length }}</strong><small>بدور مختلف لكل قناة</small></div>
+  <div class="metric-card"><span>خطافات للاختبار</span><strong>{{ (strategy.items|length) * 5 }}</strong><small>بدائل وليست وعودًا</small></div>
+</div>
+
+<div class="dashboard-grid">
+  <section class="card span-2">
+    <div class="card-head"><div><span class="card-kicker">القادم في التقويم</span><h2>قطع جاهزة للمراجعة</h2></div><a href="{{ url_for('main.content_page') }}">عرض الكل ←</a></div>
+    <div class="upcoming-list">
+      {% for item in items %}
+      <a class="upcoming-item" href="{{ url_for('main.studio_page', item=item.id) }}">
+        <time><strong>{{ item.scheduled_date.day if item.scheduled_date else item.day_number }}</strong><span>{{ item.scheduled_date.strftime('%m') if item.scheduled_date else 'يوم' }}</span></time>
+        <div class="upcoming-main"><span>{{ item.platform }} · {{ (item.virality_breakdown or {}).get('format_label', item.content_type) }}</span><strong>{{ item.title }}</strong><small>{{ (item.hooks or [''])[0] }}</small></div>
+        <div class="score-mini"><b>{{ item.virality_score }}</b><span>جاهزية</span></div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><div><span class="card-kicker">المزيج</span><h2>رحلة العميل</h2></div></div>
+    {% for part in strategy_data.get('funnel_mix', []) %}
+    <div class="mix-row"><span>{{ part.label }}</span><div><i style="width:{{ part.percent }}%"></i></div><b>{{ part.percent }}%</b></div>
+    {% endfor %}
+    <p class="card-note">التوزيع نقطة بداية مبنية على الهدف، ويُعدّل بعد ظهور بيانات الأداء.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><div><span class="card-kicker">المنهجية</span><h2>مصادر القرار</h2></div><a href="{{ url_for('main.settings_page') }}">التفاصيل</a></div>
+    <div class="source-list compact">
+      {% for source in sources[:4] %}
+      <a href="{{ source.url }}" target="_blank" rel="noopener"><span>{{ source.publisher[:1] }}</span><div><strong>{{ source.publisher }}</strong><small>{{ source.evidence_type }}</small></div><b>↗</b></a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><div><span class="card-kicker">الخطوة التالية</span><h2>نفّذ ثم تعلّم</h2></div></div>
+    <ol class="next-list">
+      <li class="done"><span>1</span><div><b>ملف الشركة</b><small>اكتمل بما يكفي</small></div></li>
+      <li class="done"><span>2</span><div><b>مسودة الاستراتيجية</b><small>الإصدار {{ strategy.version }}</small></div></li>
+      <li><span>3</span><div><b>مراجعة الخطافات</b><small>اختر النسخة المناسبة</small></div></li>
+      <li><span>4</span><div><b>سجّل خط الأساس</b><small>بعد أول 7 أيام</small></div></li>
+    </ol>
+    <a class="btn btn-block" href="{{ url_for('main.studio_page') }}">فتح حزمة التنفيذ ←</a>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}الاستراتيجية — ContentForge{% endblock %}
+{% block content %}
+<div class="page-header strategy-header">
+  <div>
+    <div class="eyebrow"><span></span>قرارات قبل الأفكار</div>
+    <h1>استراتيجية محتوى 30 يومًا</h1>
+    <p>مسودة تربط هدف الشركة بالجمهور والمحاور والمنصات والقياس، مع فصل واضح بين الإرشاد والفرضيات.</p>
+  </div>
+  <div class="header-actions">
+    {% if strategy %}<a class="btn btn-ghost" href="{{ url_for('main.export_strategy_csv') }}">تصدير CSV</a>{% endif %}
+    <form method="post">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit" data-loading-label="جارٍ تركيب المسودة…">{% if strategy %}إنشاء إصدار جديد{% else %}إنشاء مسودة الاستراتيجية{% endif %} ←</button>
+    </form>
+  </div>
+</div>
+
+{% if not strategy %}
+<div class="dashboard-grid intro-grid">
+  <section class="empty-state span-2">
+    <span class="empty-icon">{{ brand.profile_completeness }}%</span>
+    <h2>ملف {{ brand.name }} جاهز للمسودة الأولى</h2>
+    <p>سننشئ تموضعًا، أربعة محاور، أدوار القنوات، خطة أربعة أسابيع، فرصًا تحتاج تحققًا، و{{ brand.posts_per_week * 4 }} حزمة محتوى تقريبًا.</p>
+    <form method="post">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-large" type="submit" data-loading-label="جارٍ بناء القرارات والأفكار…">ابدأ بناء الاستراتيجية ←</button>
+    </form>
+  </section>
+  <section class="card assumption-card">
+    <span class="card-kicker">شفافية المنهج</span>
+    <h2>ماذا لن نفعل؟</h2>
+    <ul class="plain-list">
+      <li>لن نخترع ترندًا أو رقم مشاهدة.</li>
+      <li>لن نعدك بأن فكرة ستنتشر.</li>
+      <li>لن نساوي بين مقاييس المنصات.</li>
+      <li>لن نخفي الافتراضات الناقصة.</li>
+    </ul>
+  </section>
+</div>
+{% else %}
+{% set objective = data.get('objective', {}) %}
+{% set positioning = data.get('positioning', {}) %}
+{% set measurement = data.get('measurement', {}) %}
+
+<nav class="section-nav" aria-label="أقسام الاستراتيجية">
+  <a href="#decision">القرار</a><a href="#pillars">المحاور</a><a href="#channels">القنوات</a><a href="#sprints">خطة الأسابيع</a><a href="#trends">فرص الترند</a><a href="#measurement">القياس</a>
+</nav>
+
+<section class="strategy-hero" id="decision">
+  <div class="strategy-status"><span class="tag tag-violet">مسودة للمراجعة</span><span>الإصدار {{ strategy.version }}</span><span>آخر إنشاء {{ strategy.created_at.strftime('%Y-%m-%d') }}</span></div>
+  <div class="strategy-hero-grid">
+    <div>
+      <small>الهدف الرئيسي</small>
+      <h2>{{ objective.get('label', strategy.primary_goal) }}</h2>
+      <p>{{ objective.get('north_star', strategy.executive_summary) }}</p>
+    </div>
+    <div class="north-star"><span>North Star KPI</span><strong>{{ objective.get('primary_kpi') }}</strong><small>{{ objective.get('goal_text') }}</small></div>
+  </div>
+  <div class="strategy-facts">
+    <div><span>الجمهور</span><b>{{ positioning.get('audience') }}</b></div>
+    <div><span>المشكلة</span><b>{{ positioning.get('problem') }}</b></div>
+    <div><span>الوعد</span><b>{{ positioning.get('promise') }}</b></div>
+    <div><span>الصوت</span><b>{{ positioning.get('voice') }}</b></div>
+  </div>
+</section>
+
+{% if data.get('assumptions') %}
+<div class="notice notice-warning"><strong>افتراضات تحتاج مراجعة</strong><span>{{ data.get('assumptions')|join(' · ') }}</span></div>
+{% endif %}
+
+<section class="strategy-section" id="pillars">
+  <div class="section-heading inline"><div><span class="card-kicker">02 — محركات الخطة</span><h2>محاور المحتوى</h2></div><p>النسب مشتقة من الهدف التجاري، وليست وصفة ثابتة لكل حساب.</p></div>
+  <div class="pillar-grid">
+    {% for pillar in data.get('pillars', []) %}
+    <article class="pillar-card">
+      <div class="pillar-top"><span>0{{ loop.index }}</span><b>{{ pillar.percent }}%</b></div>
+      <h3>{{ pillar.name }}</h3>
+      <p>{{ pillar.job }}</p>
+      <div><small>مثال</small><strong>{{ pillar.example }}</strong></div>
+    </article>
+    {% endfor %}
+  </div>
+  <div class="funnel-strip">
+    {% for part in data.get('funnel_mix', []) %}<span style="--size:{{ part.percent }}"><b>{{ part.label }}</b><small>{{ part.percent }}%</small></span>{% endfor %}
+  </div>
+</section>
+
+<section class="strategy-section" id="channels">
+  <div class="section-heading inline"><div><span class="card-kicker">03 — دور كل قناة</span><h2>خطة المنصات</h2></div><p>لا ننشر النسخة نفسها في كل مكان؛ لكل قناة وظيفة وإشارة قياس.</p></div>
+  <div class="channel-grid">
+    {% for channel in data.get('platforms', []) %}
+    <article class="channel-card">
+      <div class="channel-name"><span>{{ channel.label[:1] }}</span><h3>{{ channel.label }}</h3></div>
+      <dl><div><dt>الدور</dt><dd>{{ channel.role }}</dd></div><div><dt>الصيغ</dt><dd>{{ channel.formats|join(' · ') }}</dd></div><div><dt>إشارة القياس</dt><dd>{{ channel.signal }}</dd></div></dl>
+      <p>{{ channel.cadence }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="strategy-section" id="sprints">
+  <div class="section-heading inline"><div><span class="card-kicker">04 — إيقاع الشهر</span><h2>أربع دفعات تعلّم</h2></div><p>كل أسبوع يبني على السابق ويختبر متغيرًا واضحًا.</p></div>
+  <div class="sprint-line">
+    {% for sprint in data.get('weekly_sprints', []) %}
+    <article><span>الأسبوع {{ sprint.week }}</span><h3>{{ sprint.title }}</h3><p>{{ sprint.focus }}</p><small>{{ sprint.experiment }}</small></article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="strategy-section" id="trends">
+  <div class="section-heading inline"><div><span class="card-kicker">05 — رادار الفرص</span><h2>فرضيات ترند تحتاج تحققًا</h2></div><p>هذه ليست بيانات رائجة مرصودة. افتح أدوات التحقق قبل اعتماد أي زاوية.</p></div>
+  <div class="notice notice-neutral"><strong>نوع الدليل: فرضية مولّدة من بيانات شركتك</strong><span>الزخم غير متوفر حتى تتحقق يدويًا أو تربط مصدر بيانات رسميًا.</span></div>
+  <div class="trend-grid">
+    {% for opportunity in data.get('trend_opportunities', []) %}
+    <article class="trend-card">
+      <div class="trend-meta"><span class="tag tag-amber">{{ opportunity.status }}</span><small>الزخم: {{ opportunity.momentum }}</small></div>
+      <span class="card-kicker">{{ opportunity.label }}</span>
+      <h3>{{ opportunity.title }}</h3>
+      <p>{{ opportunity.why }}</p>
+      <div class="query-box"><span>عبارة التحقق</span><code>{{ opportunity.query }}</code></div>
+      <div class="verify-links">{% for check in opportunity.checks %}<a href="{{ check.url }}" target="_blank" rel="noopener">{{ check.label }} ↗</a>{% endfor %}</div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="strategy-section" id="measurement">
+  <div class="section-heading inline"><div><span class="card-kicker">06 — نظام القياس</span><h2>ما الذي سيغيّر قرارنا؟</h2></div><p>افصل بين الانتباه، الرضا، والنتيجة التجارية.</p></div>
+  <div class="measurement-grid">
+    <article class="card"><span class="card-kicker">المؤشر الأساسي</span><h3>{{ measurement.get('primary') }}</h3><p>{{ measurement.get('baseline') }}</p></article>
+    <article class="card"><span class="card-kicker">مؤشرات مساندة</span><ul class="plain-list">{% for metric in measurement.get('supporting', []) %}<li>{{ metric }}</li>{% endfor %}</ul></article>
+    <article class="card"><span class="card-kicker">قاعدة القرار</span><h3>اختبر متغيرًا واحدًا</h3><p>{{ measurement.get('decision_rule') }}</p></article>
+  </div>
+  <div class="guardrail-card"><div><span>!</span><strong>ضوابط النشر</strong></div><ul>{% for guardrail in data.get('guardrails', []) %}<li>{{ guardrail }}</li>{% endfor %}</ul></div>
+</section>
+
+<section class="strategy-section source-section">
+  <div class="section-heading inline"><div><span class="card-kicker">سجل المنهجية</span><h2>المصادر الرسمية المستخدمة</h2></div><p>هذه المصادر تدعم المنهج، ولا تعني أن المنصة جلبت بيانات حية من حسابك.</p></div>
+  <div class="source-table">
+    {% for source in sources %}
+    <a href="{{ source.url }}" target="_blank" rel="noopener"><div><span>{{ source.publisher[:1] }}</span><strong>{{ source.publisher }}</strong></div><p>{{ source.used_for }}</p><small>{{ source.evidence_type }} · روجع {{ source.last_reviewed }}</small><b>↗</b></a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="content-preview-section">
+  <div><span class="card-kicker">الآن إلى التنفيذ</span><h2>{{ strategy.items|length }} قطعة موزعة على 30 يومًا</h2><p>راجع الأفكار، صفِّها حسب المنصة والهدف، ثم افتح حزمة التنفيذ لاختيار الخطاف.</p></div>
+  <a class="btn btn-light btn-large" href="{{ url_for('main.content_page') }}">فتح تقويم المحتوى ←</a>
+</section>
+{% endif %}
+{% endblock %}

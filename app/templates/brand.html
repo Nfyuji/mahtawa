@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}ملف الشركة — ContentForge{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow"><span></span>{% if onboarding %}الخطوة الأولى{% else %}مصدر الخطة{% endif %}</div>
+    <h1>{% if onboarding %}لنعرّف شركتك بدقة{% else %}ملف الشركة{% endif %}</h1>
+    <p>كل معلومة هنا تغيّر المحاور والخطافات والمنصات المقترحة. اكتب ما تعرفه فعلًا، واترك الباقي للمراجعة.</p>
+  </div>
+  <div class="completion-card">
+    <div class="completion-ring" style="--value: {{ brand.profile_completeness if brand else 0 }}"><strong data-profile-percent>{{ brand.profile_completeness if brand else 0 }}%</strong></div>
+    <span><b>اكتمال الملف</b><small>ليس مقياس دقة</small></span>
+  </div>
+</div>
+
+{% if onboarding %}
+<div class="notice notice-primary"><strong>ابدأ بالحقول الأساسية.</strong><span>بعد الحفظ سنبني مسودة استراتيجية يمكنك مراجعتها قبل إنتاج أي محتوى.</span></div>
+{% endif %}
+
+<form method="post" class="profile-layout" data-profile-form>
+  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+  <aside class="form-map">
+    <span>أقسام الملف</span>
+    <a href="#identity"><i>1</i> الشركة والعرض</a>
+    <a href="#audience"><i>2</i> الجمهور والاحتياج</a>
+    <a href="#voice"><i>3</i> التميّز والصوت</a>
+    <a href="#campaign"><i>4</i> الهدف والتنفيذ</a>
+    <div class="form-map-note">الحقول التي تحمل * ضرورية لإنشاء الخطة.</div>
+  </aside>
+
+  <div class="form-sections">
+    <section class="form-section" id="identity">
+      <div class="section-number">01</div>
+      <div class="section-title"><h2>الشركة والعرض</h2><p>ما الذي تقدمه؟ ولأي سوق؟</p></div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="name">اسم الشركة <b>*</b></label>
+          <input id="name" name="name" data-profile-field required value="{{ brand.name if brand else '' }}" placeholder="مثال: شركة أفق">
+        </div>
+        <div class="field">
+          <label for="website">الموقع الإلكتروني</label>
+          <input id="website" name="website" type="url" value="{{ brand.website if brand and brand.website else '' }}" placeholder="https://example.com">
+        </div>
+        <div class="field">
+          <label for="industry">القطاع</label>
+          <input id="industry" name="industry" data-profile-field value="{{ brand.industry if brand and brand.industry else '' }}" placeholder="مثال: تقنية مالية، مطاعم، عقار">
+        </div>
+        <div class="field">
+          <label for="business_model">نموذج العمل</label>
+          {% set bm = brand.business_model if brand and brand.business_model else 'service' %}
+          <select id="business_model" name="business_model">
+            <option value="service" {% if bm=='service' %}selected{% endif %}>خدمات</option>
+            <option value="ecommerce" {% if bm=='ecommerce' %}selected{% endif %}>متجر إلكتروني</option>
+            <option value="b2b_saas" {% if bm=='b2b_saas' %}selected{% endif %}>منصة / SaaS للشركات</option>
+            <option value="b2c_app" {% if bm=='b2c_app' %}selected{% endif %}>تطبيق للمستهلك</option>
+            <option value="local" {% if bm=='local' %}selected{% endif %}>نشاط محلي</option>
+            <option value="creator" {% if bm=='creator' %}selected{% endif %}>علامة شخصية / صانع محتوى</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="description">وصف مختصر للنشاط <b>*</b></label>
+        <textarea id="description" name="description" data-profile-field rows="3" required placeholder="صف الشركة بجملتين دون شعارات عامة…">{{ brand.description if brand and brand.description else '' }}</textarea>
+        <small>مثال جيد: «منصة عربية تساعد فرق المبيعات على إدارة محادثات العملاء من مكان واحد».</small>
+      </div>
+      <div class="field">
+        <label for="offer">العرض أو المنتج الأساسي <b>*</b></label>
+        <textarea id="offer" name="offer" data-profile-field rows="3" required placeholder="ماذا سيشتري العميل أو يسجّل فيه بالضبط؟">{{ brand.offer if brand and brand.offer else '' }}</textarea>
+      </div>
+    </section>
+
+    <section class="form-section" id="audience">
+      <div class="section-number">02</div>
+      <div class="section-title"><h2>الجمهور والاحتياج</h2><p>اكتب شخصًا واضحًا، لا «الجميع».</p></div>
+      <div class="field">
+        <label for="audience">الجمهور الأساسي <b>*</b></label>
+        <textarea id="audience" name="audience" data-profile-field rows="3" required placeholder="مثال: أصحاب المتاجر السعودية من 3–20 موظفًا الذين يديرون واتساب وإنستغرام بأنفسهم">{{ brand.audience if brand and brand.audience else '' }}</textarea>
+      </div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="problem">المشكلة الأكثر إلحاحًا <b>*</b></label>
+          <textarea id="problem" name="problem" data-profile-field rows="4" required placeholder="ما الذي يستهلك وقتهم أو يخسرهم فرصة؟">{{ brand.problem if brand and brand.problem else '' }}</textarea>
+        </div>
+        <div class="field">
+          <label for="audience_desire">النتيجة التي يريدونها</label>
+          <textarea id="audience_desire" name="audience_desire" data-profile-field rows="4" placeholder="ما الحالة التي يريدون الوصول إليها؟">{{ brand.audience_desire if brand and brand.audience_desire else '' }}</textarea>
+        </div>
+      </div>
+      <div class="form-grid three">
+        <div class="field">
+          <label for="customer_stage">مرحلة الوعي</label>
+          {% set cs = brand.customer_stage if brand and brand.customer_stage else 'problem_aware' %}
+          <select id="customer_stage" name="customer_stage">
+            <option value="unaware" {% if cs=='unaware' %}selected{% endif %}>لا يعرف المشكلة بعد</option>
+            <option value="problem_aware" {% if cs=='problem_aware' %}selected{% endif %}>يعرف المشكلة</option>
+            <option value="solution_aware" {% if cs=='solution_aware' %}selected{% endif %}>يقارن الحلول</option>
+            <option value="ready" {% if cs=='ready' %}selected{% endif %}>قريب من القرار</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="market">السوق</label>
+          {% set market = brand.market if brand else 'saudi' %}
+          <select id="market" name="market">
+            <option value="saudi" {% if market=='saudi' %}selected{% endif %}>السعودية</option>
+            <option value="gulf" {% if market=='gulf' %}selected{% endif %}>الخليج</option>
+            <option value="mena" {% if market=='mena' %}selected{% endif %}>الشرق الأوسط وشمال أفريقيا</option>
+            <option value="global" {% if market=='global' %}selected{% endif %}>عالمي</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="dialect">لغة/لهجة المحتوى</label>
+          <input id="dialect" name="dialect" value="{{ brand.dialect if brand and brand.dialect else 'عربية سعودية واضحة' }}" placeholder="مثال: عربية سعودية واضحة">
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section" id="voice">
+      <div class="section-number">03</div>
+      <div class="section-title"><h2>التميّز وصوت العلامة</h2><p>ما الذي يجب أن يظل ثابتًا في كل قطعة؟</p></div>
+      <div class="field">
+        <label for="competitive_advantage">الميزة التنافسية</label>
+        <textarea id="competitive_advantage" name="competitive_advantage" data-profile-field rows="3" placeholder="لماذا يختارك العميل بدل البديل؟ اذكر فرقًا يمكن إثباته.">{{ brand.competitive_advantage if brand and brand.competitive_advantage else '' }}</textarea>
+      </div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="brand_voice">نبرة العلامة</label>
+          <textarea id="brand_voice" name="brand_voice" data-profile-field rows="3" placeholder="مثال: خبير وعملي، سعودي، بلا مبالغة أو تخويف">{{ brand.brand_voice if brand and brand.brand_voice else '' }}</textarea>
+        </div>
+        <div class="field">
+          <label for="competitors">المنافسون أو البدائل</label>
+          <textarea id="competitors" name="competitors" rows="3" placeholder="أسماء أو روابط، وافصل بينها بفاصلة">{{ brand.competitors if brand and brand.competitors else '' }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section" id="campaign">
+      <div class="section-number">04</div>
+      <div class="section-title"><h2>الهدف وقدرة التنفيذ</h2><p>خطة واقعية أفضل من تقويم لا يستطيع الفريق تنفيذه.</p></div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="marketing_objective">الهدف الأساسي</label>
+          {% set mo = brand.marketing_objective if brand and brand.marketing_objective else 'awareness' %}
+          <select id="marketing_objective" name="marketing_objective">
+            <option value="awareness" {% if mo=='awareness' %}selected{% endif %}>وعي مؤهل</option>
+            <option value="leads" {% if mo=='leads' %}selected{% endif %}>عملاء محتملون</option>
+            <option value="sales" {% if mo=='sales' %}selected{% endif %}>مبيعات / حجوزات</option>
+            <option value="community" {% if mo=='community' %}selected{% endif %}>مجتمع وتفاعل</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="campaign_start_date">بداية الخطة</label>
+          <input id="campaign_start_date" type="date" name="campaign_start_date" value="{{ brand.campaign_start_date if brand and brand.campaign_start_date else '' }}">
+        </div>
+      </div>
+      <div class="field">
+        <label for="monthly_goal">النتيجة المطلوبة خلال 30 يومًا <b>*</b></label>
+        <textarea id="monthly_goal" name="monthly_goal" data-profile-field rows="3" required placeholder="مثال: زيادة طلبات التجربة المؤهلة وقياس التحويل من المحتوى">{{ brand.monthly_goal if brand and brand.monthly_goal else '' }}</textarea>
+      </div>
+      <div class="field">
+        <label>المنصات التي تملك قدرة فعلية على إدارتها</label>
+        {% set plats = brand.platforms if brand and brand.platforms else ['tiktok','instagram'] %}
+        <div class="choice-grid platform-choices">
+          {% for key,label in [('tiktok','تيك توك'),('instagram','إنستغرام'),('youtube','يوتيوب'),('x','X'),('facebook','فيسبوك')] %}
+          <label class="choice-card"><input type="checkbox" name="platforms" value="{{ key }}" {% if key in plats %}checked{% endif %}><span>{{ label }}</span><small>إضافة للخطة</small></label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-grid two">
+        <div class="field">
+          <label for="posts_per_week">القدرة الأسبوعية</label>
+          <select id="posts_per_week" name="posts_per_week">
+            {% set ppw = brand.posts_per_week if brand and brand.posts_per_week else 5 %}
+            {% for n in range(2,8) %}<option value="{{ n }}" {% if ppw==n %}selected{% endif %}>{{ n }} منشورات أسبوعيًا</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="resources">موارد الإنتاج</label>
+          <textarea id="resources" name="resources" rows="3" placeholder="مثال: مؤسس أمام الكاميرا، مصمم جزئي، تصوير بالجوال">{{ brand.resources if brand and brand.resources else '' }}</textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="form-submit-bar">
+      <div><strong>سننشئ مسودة، لا قرارًا نهائيًا.</strong><small>يمكنك تعديل البيانات وإنشاء إصدار جديد في أي وقت.</small></div>
+      <button class="btn btn-large" type="submit" data-loading-label="جارٍ حفظ ملف الشركة…">حفظ والانتقال للاستراتيجية ←</button>
+    </div>
+  </div>
+</form>
+{% endblock %}

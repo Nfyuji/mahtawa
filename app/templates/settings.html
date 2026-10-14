@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}الإعدادات والمصادر — ContentForge{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><div class="eyebrow"><span></span>الشفافية والتحكم</div><h1>الإعدادات والمصادر</h1><p>بيانات الحساب، حالة التكاملات، وسجل الإرشادات التي تستند إليها المنهجية.</p></div>
+</div>
+
+<div class="settings-grid">
+  <section class="card">
+    <span class="card-kicker">الحساب</span><h2>بياناتك</h2>
+    <form method="post" class="stack-form compact-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <div class="field"><label for="name">الاسم</label><input id="name" name="name" value="{{ current_user.name }}" required></div>
+      <div class="field"><label>البريد</label><input value="{{ current_user.email }}" disabled></div>
+      <button class="btn" type="submit">حفظ الاسم</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <span class="card-kicker">حالة النظام</span><h2>التكاملات</h2>
+    <div class="integration-list">
+      <div><span class="integration-icon">AI</span><p><b>توليد OpenAI</b><small>{% if integration_state.openai %}مفتاح الخادم موجود؛ لم يُفعّل داخل هذا الإصدار بعد.{% else %}غير موصول. المحرك المحلي يعمل دون مفتاح.{% endif %}</small></p><em class="{{ 'connected' if integration_state.openai else '' }}">{{ 'مهيأ' if integration_state.openai else 'غير موصول' }}</em></div>
+      <div><span class="integration-icon">YT</span><p><b>YouTube Data</b><small>{% if integration_state.youtube %}مفتاح الخادم موجود؛ جلب الاتجاهات الحية يحتاج موصلًا واختبارًا منفصلًا.{% else %}غير موصول. لا نعرض مشاهدات أو ترندات وهمية.{% endif %}</small></p><em class="{{ 'connected' if integration_state.youtube else '' }}">{{ 'مهيأ' if integration_state.youtube else 'غير موصول' }}</em></div>
+      <div><span class="integration-icon">TT</span><p><b>TikTok Creative Center</b><small>تحقق يدوي عبر الموقع الرسمي؛ لا نفترض وجود API عام للترندات.</small></p><em>يدوي</em></div>
+      <div><span class="integration-icon">GT</span><p><b>Google Trends</b><small>روابط تحقق يدوية. القيم النسبية ليست حجم بحث مطلقًا.</small></p><em>يدوي</em></div>
+    </div>
+    <div class="notice notice-neutral compact"><strong>إدارة آمنة للمفاتيح</strong><span>لا نطلب من الزائر لصق مفاتيحه داخل الواجهة. التكاملات الإنتاجية تُدار كأسرار على الخادم.</span></div>
+  </section>
+</div>
+
+<section class="strategy-section source-section">
+  <div class="section-heading inline"><div><span class="card-kicker">سجل المصادر</span><h2>إرشادات رسمية قابلة للمراجعة</h2></div><p>نستخدمها لتشكيل المنهجية فقط. ما لم يظهر «بيانات مرصودة»، فالاقتراح يبقى فرضية.</p></div>
+  <div class="source-table">
+    {% for source in sources %}
+    <a href="{{ source.url }}" target="_blank" rel="noopener"><div><span>{{ source.publisher[:1] }}</span><strong>{{ source.publisher }}</strong></div><p>{{ source.used_for }}</p><small>{{ source.evidence_type }} · روجع {{ source.last_reviewed }}</small><b>↗</b></a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="evidence-legend card">
+  <div><span class="card-kicker">قاموس الثقة</span><h2>كيف نسمّي الأدلة؟</h2></div>
+  <div class="legend-grid"><p><span class="legend observed"></span><b>مرصود</b><small>بيانات جُلبت من مصدر محدد مع تاريخ.</small></p><p><span class="legend computed"></span><b>محسوب</b><small>نتيجة معادلة واضحة على بيانات مرصودة.</small></p><p><span class="legend interpreted"></span><b>تفسير</b><small>قراءة مساعدة يجب مراجعتها بشريًا.</small></p><p><span class="legend hypothesis"></span><b>فرضية</b><small>اقتراح يحتاج اختبارًا ولا يثبت وجود ترند.</small></p></div>
+</section>
+{% endblock %}

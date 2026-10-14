@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ContentForge — من بيانات شركتك إلى استراتيجية محتوى قابلة للاختبار والقياس.">
+  <title>{% block title %}ContentForge{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{% if current_user.is_authenticated %}app-body{% else %}public-body{% endif %}">
+{% if current_user.is_authenticated %}
+<div class="app-shell">
+  <aside class="sidebar" id="app-sidebar">
+    <a class="logo" href="{{ url_for('main.home') }}" aria-label="ContentForge الرئيسية">
+      <span class="logo-mark">CF</span>
+      <span>
+        <strong>ContentForge</strong>
+        <small>استراتيجية محتوى قابلة للقياس</small>
+      </span>
+    </a>
+
+    {% if brand %}
+    <div class="workspace-card">
+      <span class="workspace-avatar">{{ brand.name[:1] }}</span>
+      <span>
+        <small>مساحة الشركة</small>
+        <strong>{{ brand.name }}</strong>
+      </span>
+      <span class="workspace-score">{{ brand.profile_completeness }}%</span>
+    </div>
+    {% endif %}
+
+    <nav class="nav" aria-label="التنقل الرئيسي">
+      <span class="nav-label">مساحة العمل</span>
+      <a href="{{ url_for('main.home') }}" class="{% if request.endpoint == 'main.home' %}active{% endif %}">
+        <span class="nav-dot"></span>نظرة عامة
+      </a>
+      <a href="{{ url_for('main.brand_page') }}" class="{% if request.endpoint == 'main.brand_page' %}active{% endif %}">
+        <span class="nav-dot"></span>ملف الشركة
+      </a>
+      <a href="{{ url_for('main.strategy_page') }}" class="{% if request.endpoint in ['main.strategy_page','main.export_strategy_csv'] %}active{% endif %}">
+        <span class="nav-dot"></span>الاستراتيجية
+      </a>
+      <a href="{{ url_for('main.content_page') }}" class="{% if request.endpoint == 'main.content_page' %}active{% endif %}">
+        <span class="nav-dot"></span>تقويم المحتوى
+      </a>
+      <a href="{{ url_for('main.studio_page') }}" class="{% if request.endpoint == 'main.studio_page' %}active{% endif %}">
+        <span class="nav-dot"></span>حزمة التنفيذ
+      </a>
+      <span class="nav-label">النظام</span>
+      <a href="{{ url_for('main.settings_page') }}" class="{% if request.endpoint == 'main.settings_page' %}active{% endif %}">
+        <span class="nav-dot"></span>الإعدادات والمصادر
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <span class="user-avatar">{{ current_user.name[:1] }}</span>
+        <span><strong>{{ current_user.name }}</strong><small>{{ current_user.email }}</small></span>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="text-button" type="submit">تسجيل الخروج</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <button class="menu-button" type="button" data-sidebar-toggle aria-label="فتح القائمة">☰</button>
+      <div class="topbar-context">
+        <span class="status-dot"></span>
+        <span>{% if brand %}ملف الشركة {{ brand.profile_completeness }}% مكتمل{% else %}ابدأ بإعداد شركتك{% endif %}</span>
+      </div>
+      <div class="topbar-badge">النتائج فرضيات للاختبار وليست ضمانًا للانتشار</div>
+    </header>
+
+    <main class="content-shell">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-stack" role="status">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% else %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="public-flashes">
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+  {% block auth %}{% endblock %}
+{% endif %}
+<script defer src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

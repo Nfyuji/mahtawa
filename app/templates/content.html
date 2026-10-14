@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}تقويم المحتوى — ContentForge{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow"><span></span>من الخطة إلى الإنتاج</div>
+    <h1>تقويم المحتوى</h1>
+    <p>صفِّ الخطة، راجع سبب كل فكرة، ثم افتح حزمة التنفيذ لاختيار الخطاف المناسب.</p>
+  </div>
+  <div class="header-actions">
+    {% if strategy %}<a class="btn btn-ghost" href="{{ url_for('main.export_strategy_csv') }}">تصدير الجدول</a>{% endif %}
+    <a class="btn" href="{{ url_for('main.strategy_page') }}">الاستراتيجية ←</a>
+  </div>
+</div>
+
+{% if not items %}
+<section class="empty-state">
+  <span class="empty-icon">00</span><h2>لا توجد خطة تنفيذ بعد</h2><p>أنشئ مسودة الاستراتيجية أولًا ليظهر تقويم 30 يومًا.</p><a class="btn" href="{{ url_for('main.strategy_page') }}">إنشاء الخطة ←</a>
+</section>
+{% else %}
+<section class="calendar-summary">
+  <div><span>الخطة الحالية</span><strong>{{ strategy.items|length }} قطعة</strong><small>{{ strategy.month_start }} — {{ strategy.month_end }}</small></div>
+  <div><span>الحالة</span><strong>مسودة للمراجعة</strong><small>لا شيء يُنشر تلقائيًا</small></div>
+  <div><span>منهج الفرص</span><strong>فرضيات + مصادر تحقق</strong><small>لا توجد ترندات حية موصولة</small></div>
+</section>
+
+<div class="filter-bar" data-content-filters>
+  <div class="search-field"><span>⌕</span><input type="search" placeholder="ابحث في العناوين والخطافات…" data-filter-search></div>
+  <select data-filter-platform aria-label="تصفية حسب المنصة"><option value="">كل المنصات</option>{% for platform in (brand.platforms or []) %}<option value="{{ platform }}">{{ platform }}</option>{% endfor %}</select>
+  <select data-filter-goal aria-label="تصفية حسب الهدف"><option value="">كل الأهداف</option><option value="discovery">اكتشاف</option><option value="trust">ثقة</option><option value="engagement">تفاعل</option><option value="conversion">تحويل</option></select>
+  <span class="filter-count"><b data-visible-count>{{ items|length }}</b> نتيجة</span>
+</div>
+
+<div class="content-grid" data-content-grid>
+  {% for item in items %}
+  {% set meta = item.virality_breakdown or {} %}
+  <article class="content-card" data-content-card data-platform="{{ item.platform }}" data-goal="{{ item.post_goal }}" data-search="{{ item.title }} {{ (item.hooks or [])|join(' ') }} {{ item.pillar_name }}">
+    <div class="content-card-top">
+      <time><b>{{ item.scheduled_date.day if item.scheduled_date else item.day_number }}</b><span>{{ item.scheduled_date.strftime('%m/%Y') if item.scheduled_date else 'يوم' }}</span></time>
+      <div class="card-tags"><span class="tag tag-soft">{{ item.platform }}</span><span class="tag tag-amber">{{ meta.get('evidence_label','فرضية') }}</span></div>
+    </div>
+    <span class="card-kicker">{{ item.pillar_name }} · {{ meta.get('format_label', item.content_type) }}</span>
+    <h2>{{ item.title }}</h2>
+    <p class="rationale">{{ item.rationale }}</p>
+    <div class="hook-box"><span>الخطاف الأساسي</span><strong>{{ (item.hooks or [''])[0] }}</strong><button type="button" data-copy-text="{{ (item.hooks or [''])[0] }}">نسخ</button></div>
+    <div class="content-facts">
+      <div><span>مؤشر الاختبار</span><b>{{ meta.get('success_metric','يُحدد بعد خط الأساس') }}</b></div>
+      <div><span>الجهد</span><b>{{ meta.get('effort','متوسط') }}</b></div>
+      <div><span>إعادة الاستخدام</span><b>{{ meta.get('repurpose','نسخة منصة أخرى') }}</b></div>
+    </div>
+    <div class="content-card-footer">
+      <div class="readiness"><strong>{{ item.virality_score }}</strong><span><b>{{ meta.get('readiness_label','جاهزة للمراجعة') }}</b><small>جاهزية للاختبار — لا توقع انتشار</small></span></div>
+      <a class="btn btn-small" href="{{ url_for('main.studio_page', item=item.id) }}">فتح الحزمة ←</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+<div class="empty-filter" data-filter-empty hidden><h2>لا توجد نتيجة بهذه التصفية</h2><p>جرّب منصة أو هدفًا آخر.</p></div>
+{% endif %}
+{% endblock %}

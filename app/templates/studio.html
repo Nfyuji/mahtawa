@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}حزمة التنفيذ — ContentForge{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow"><span></span>مختبر الفكرة</div>
+    <h1>حزمة التنفيذ</h1>
+    <p>اختر خطافًا واحدًا، راجع تطابق الوعد مع المحتوى، ثم سلّم الحزمة للمصمم أو صانع المحتوى.</p>
+  </div>
+  {% if selected %}<button class="btn btn-ghost" type="button" data-copy-target="#execution-pack">نسخ الحزمة كاملة</button>{% endif %}
+</div>
+
+{% if not items %}
+<section class="empty-state"><span class="empty-icon">00</span><h2>لا توجد حزم تنفيذ</h2><p>أنشئ الاستراتيجية أولًا.</p><a class="btn" href="{{ url_for('main.strategy_page') }}">إنشاء الاستراتيجية ←</a></section>
+{% else %}
+<div class="studio-layout">
+  <aside class="studio-list card">
+    <div class="studio-list-head"><span class="card-kicker">الخطة الحالية</span><h2>{{ items|length }} قطعة</h2></div>
+    <div class="studio-search"><span>⌕</span><input type="search" placeholder="ابحث…" data-studio-search></div>
+    <div class="studio-items" data-studio-list>
+      {% for item in items %}
+      <a class="studio-item {% if selected and selected.id==item.id %}active{% endif %}" href="{{ url_for('main.studio_page', item=item.id) }}" data-studio-item data-search="{{ item.title }} {{ item.platform }}">
+        <span>{{ item.day_number }}</span><div><small>{{ item.platform }} · {{ (item.virality_breakdown or {}).get('format_label', item.content_type) }}</small><strong>{{ item.title }}</strong></div>
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <div class="studio-workspace">
+    {% if selected %}
+    {% set meta = selected.virality_breakdown or {} %}
+    <section class="studio-title-card">
+      <div class="studio-title-meta"><span class="tag tag-soft">اليوم {{ selected.day_number }}</span><span class="tag tag-soft">{{ selected.platform }}</span><span class="tag tag-amber">{{ meta.get('evidence_label','فرضية تحتاج اختبارًا') }}</span></div>
+      <h2>{{ selected.title }}</h2>
+      <p>{{ selected.rationale }}</p>
+      <div class="studio-kpis"><div><span>الصيغة</span><b>{{ meta.get('format_label', selected.content_type) }}</b></div><div><span>مؤشر النجاح</span><b>{{ meta.get('success_metric') }}</b></div><div><span>جاهزية الاختبار</span><b>{{ selected.virality_score }}/100</b></div></div>
+    </section>
+
+    <section class="card hook-lab">
+      <div class="card-head"><div><span class="card-kicker">A/B Hook Lab</span><h2>اختر افتتاحية واحدة للاختبار</h2></div><span class="estimate-label">التقييم داخلي للمفاضلة فقط</span></div>
+      <p class="card-intro">ثبّت بقية الحزمة قدر الإمكان عند مقارنة نسختين. لا تعلن فائزًا من مشاهدة واحدة أو عينة صغيرة.</p>
+      <div class="hook-options">
+        {% for hook in selected.hooks or [] %}
+        {% set score = meta.get('hook_scores', [])[loop.index0] if meta.get('hook_scores') and loop.index0 < meta.get('hook_scores')|length else {} %}
+        <article class="hook-option {% if loop.first %}selected{% endif %}">
+          <div class="hook-rank"><span>{{ 'المعتمد' if loop.first else 'بديل ' ~ loop.index }}</span><strong>{{ score.get('score','—') }}</strong></div>
+          <p>{{ hook }}</p>
+          <div class="hook-signals"><span>وضوح {{ score.get('clarity','—') }}</span><span>فضول {{ score.get('curiosity','—') }}</span><span>مصداقية {{ score.get('credibility','—') }}</span></div>
+          <div class="hook-actions">
+            <button type="button" class="text-button" data-copy-text="{{ hook }}">نسخ</button>
+            {% if not loop.first %}
+            <form method="post">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="item_id" value="{{ selected.id }}">
+              <input type="hidden" name="action" value="select_hook">
+              <input type="hidden" name="hook_index" value="{{ loop.index0 }}">
+              <button class="btn btn-small btn-ghost" type="submit">اعتماد هذا الخطاف</button>
+            </form>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card execution-card" id="execution-pack">
+      <div class="card-head"><div><span class="card-kicker">الحزمة الأساسية</span><h2>{{ meta.get('format_label', selected.content_type) }}</h2></div><button class="btn btn-small btn-ghost" type="button" data-copy-target="#execution-text">نسخ النص</button></div>
+      <pre class="execution-text" id="execution-text">{{ selected.scenes }}</pre>
+    </section>
+
+    <div class="execution-grid">
+      <section class="card"><span class="card-kicker">النص / التلقين</span><h2>الكلام أو النسخة</h2><pre class="compact-text">{{ selected.script.body if selected.script else selected.script_body }}</pre></section>
+      <section class="card"><span class="card-kicker">دليل الإنتاج</span><h2>على الشاشة والمونتاج</h2><dl class="brief-list"><div><dt>النص المرئي</dt><dd>{{ selected.on_screen_text }}</dd></div><div><dt>التنفيذ</dt><dd>{{ selected.editing_notes }}</dd></div><div><dt>CTA</dt><dd>{{ selected.cta }}</dd></div></dl></section>
+      <section class="card"><span class="card-kicker">إعادة الاستخدام</span><h2>استخرج قيمة إضافية</h2><p>{{ meta.get('repurpose','حوّل الفكرة إلى صيغة أخرى تناسب المنصة.') }}</p><div class="keyword-row">{% for keyword in selected.keywords or [] %}<span>{{ keyword }}</span>{% endfor %}</div></section>
+      <section class="card"><span class="card-kicker">فرضية الاختبار</span><h2>لماذا ننشرها؟</h2><p>{{ selected.script.hypothesis if selected.script else 'اختبر الاستجابة الفعلية للجمهور.' }}</p><small class="evidence-note">حالة الدليل: {{ meta.get('evidence_label','فرضية') }}. لا تستخدم النتيجة كتوقع مضمون.</small></section>
+    </div>
+
+    <section class="card revision-card">
+      <div><span class="card-kicker">ملاحظة للفريق</span><h2>حدّث الحزمة دون تغيير الخطة كاملة</h2><p>أضف توجيهًا واضحًا؛ سيُحفظ داخل الحزمة الحالية.</p></div>
+      <form method="post">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="item_id" value="{{ selected.id }}">
+        <input type="hidden" name="action" value="regenerate">
+        <textarea name="prompt" rows="3" placeholder="مثال: اجعل المثال مناسبًا لمتجر صغير، وتجنب ذكر السعر"></textarea>
+        <button class="btn" type="submit" data-loading-label="جارٍ تحديث الحزمة…">حفظ الملاحظة وتحديث الحزمة</button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

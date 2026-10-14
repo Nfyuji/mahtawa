@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}ContentForge — استراتيجية محتوى من بيانات شركتك{% endblock %}
+{% block auth %}
+<div class="public-site">
+  <header class="public-nav container">
+    <a class="logo" href="{{ url_for('main.index') }}">
+      <span class="logo-mark">CF</span>
+      <span><strong>ContentForge</strong><small>خطط تُختبر بالأرقام</small></span>
+    </a>
+    <nav>
+      <a class="nav-login" href="{{ url_for('auth.login') }}">تسجيل الدخول</a>
+      <a class="btn btn-small" href="{{ url_for('auth.register') }}">ابنِ خطتك الآن</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero container">
+      <div class="hero-copy">
+        <div class="eyebrow"><span></span>من بيانات الشركة إلى خطة تنفيذ واضحة</div>
+        <h1>محتوى أقوى.<br><em>بتخمين أقل.</em></h1>
+        <p class="hero-lead">أدخل عرضك وجمهورك وهدفك، واحصل على استراتيجية 30 يومًا، محاور محتوى، فرضيات ترند قابلة للتحقق، وخطافات وسكربتات جاهزة للاختبار.</p>
+        <div class="hero-actions">
+          <a class="btn btn-large" href="{{ url_for('auth.register') }}">أنشئ مسودة استراتيجية مجانية <span>←</span></a>
+          <a class="btn btn-ghost btn-large" href="#method">شاهد كيف نعمل</a>
+        </div>
+        <div class="trust-line">
+          <span>✓ لا نعدك بترند مضمون</span>
+          <span>✓ كل فرصة توضّح مصدر التحقق</span>
+          <span>✓ تعمل دون مفتاح API</span>
+        </div>
+      </div>
+
+      <div class="hero-product" aria-label="معاينة المنتج">
+        <div class="product-window">
+          <div class="window-top"><span></span><span></span><span></span><small>استراتيجية الشهر</small></div>
+          <div class="product-body">
+            <div class="mock-head">
+              <div><small>الهدف الأساسي</small><strong>عملاء محتملون مؤهلون</strong></div>
+              <span class="tag tag-violet">مسودة للمراجعة</span>
+            </div>
+            <div class="mock-metrics">
+              <div><b>20</b><span>قطعة محتوى</span></div>
+              <div><b>4</b><span>محاور واضحة</span></div>
+              <div><b>5</b><span>خطافات لكل فكرة</span></div>
+            </div>
+            <div class="mock-chart">
+              <div class="chart-label"><span>مزيج رحلة العميل</span><small>30 يومًا</small></div>
+              <div class="stacked-bar"><i style="width:25%"></i><i style="width:30%"></i><i style="width:15%"></i><i style="width:30%"></i></div>
+              <div class="chart-legend"><span>اكتشاف</span><span>ثقة</span><span>تفاعل</span><span>تحويل</span></div>
+            </div>
+            <div class="mock-idea">
+              <span class="idea-number">01</span>
+              <div><small>فرضية محتوى · تحتاج تحققًا</small><strong>قبل أن تختار حلًا، اسأل هذه الأسئلة</strong><span>Instagram · كاروسيل · حفظ ومشاركة</span></div>
+              <b>←</b>
+            </div>
+            <div class="mock-idea muted-idea">
+              <span class="idea-number">02</span>
+              <div><small>حزمة تنفيذ</small><strong>الطريقة القديمة مقابل طريقتك</strong><span>TikTok · فيديو قصير · 5 Hooks</span></div>
+              <b>←</b>
+            </div>
+          </div>
+        </div>
+        <div class="floating-note"><span>●</span><div><small>جاهزية الفكرة للاختبار</small><strong>86 / 100</strong><em>ليست توقعًا للمشاهدات</em></div></div>
+      </div>
+    </section>
+
+    <section class="source-ribbon">
+      <div class="container">
+        <span>منهجية مستندة إلى إرشادات رسمية من</span>
+        {% for source in sources %}<strong>{{ source.publisher }}</strong>{% endfor %}
+      </div>
+    </section>
+
+    <section class="section container" id="method">
+      <div class="section-heading">
+        <div class="eyebrow"><span></span>رحلة واحدة متصلة</div>
+        <h2>ليس مولّد عناوين.<br>بل نظام قرار للمحتوى.</h2>
+        <p>كل مرحلة تحول بياناتك إلى قرار يمكن لفريقك فهمه وتنفيذه وقياسه.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card"><span>01</span><h3>ملف شركة غني</h3><p>العرض، الجمهور، الألم، الرغبة، النبرة، الموارد، المنصات والهدف التجاري.</p></article>
+        <article class="feature-card"><span>02</span><h3>استراتيجية قبل الأفكار</h3><p>تموضع، محاور، أدوار القنوات، مزيج رحلة العميل ومؤشرات القرار.</p></article>
+        <article class="feature-card"><span>03</span><h3>فرص مع دليل واضح</h3><p>نميز بين الإرشاد الرسمي، الملاحظة الحقيقية، والفرضية التي تحتاج تحققًا.</p></article>
+        <article class="feature-card"><span>04</span><h3>حزمة تنفيذ كاملة</h3><p>خمسة خطافات، سيناريو أو كاروسيل، CTA، مقياس نجاح وخطة إعادة استخدام.</p></article>
+      </div>
+    </section>
+
+    <section class="cta-section container">
+      <div><small>ابدأ من بياناتك، لا من قالب عام</small><h2>حوّل معرفة شركتك إلى شهر كامل من الاختبارات الذكية.</h2></div>
+      <a class="btn btn-light btn-large" href="{{ url_for('auth.register') }}">ابدأ إعداد الشركة ←</a>
+    </section>
+  </main>
+
+  <footer class="public-footer container"><span>© {{ current_year }} ContentForge</span><span>منهجية شفافة · مصادر رسمية · لا وعود مضللة</span></footer>
+</div>
+{% endblock %}

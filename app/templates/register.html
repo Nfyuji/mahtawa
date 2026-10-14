@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}إنشاء حساب — ContentForge{% endblock %}
+{% block auth %}
+<div class="auth-layout register-layout">
+  <div class="auth-panel">
+    <a class="logo" href="{{ url_for('main.index') }}">
+      <span class="logo-mark">CF</span>
+      <span><strong>ContentForge</strong><small>استراتيجية محتوى قابلة للقياس</small></span>
+    </a>
+    <div class="auth-copy">
+      <div class="eyebrow"><span></span>ابدأ بخطوة واحدة</div>
+      <h1>عرّفنا بشركتك.<br><em>ونبني المسودة.</em></h1>
+      <p>بعد إنشاء الحساب ستدخل بيانات العرض والجمهور والهدف، ثم تحصل على خطة قابلة للمراجعة والتعديل.</p>
+    </div>
+    <ol class="auth-steps">
+      <li><span>1</span><div><strong>ملف الشركة</strong><small>من أنت ولمن تبيع؟</small></div></li>
+      <li><span>2</span><div><strong>قرارات الاستراتيجية</strong><small>الهدف والمحاور والقنوات</small></div></li>
+      <li><span>3</span><div><strong>حزم التنفيذ</strong><small>أفكار وخطافات وتقويم</small></div></li>
+    </ol>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-card">
+      <a class="back-link" href="{{ url_for('main.index') }}">→ العودة للرئيسية</a>
+      <h2>إنشاء حساب مجاني</h2>
+      <p class="muted">لا تحتاج بطاقة دفع أو مفتاح API للبدء.</p>
+      <form method="post" class="stack-form">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="name">اسمك</label>
+          <input id="name" name="name" autocomplete="name" value="{{ request.form.get('name','') }}" placeholder="مثال: خالد محمد" minlength="2" required>
+        </div>
+        <div class="field">
+          <label for="email">البريد الإلكتروني</label>
+          <input id="email" type="email" name="email" autocomplete="email" value="{{ request.form.get('email','') }}" placeholder="name@company.com" required>
+        </div>
+        <div class="field">
+          <label for="password">كلمة المرور</label>
+          <input id="password" type="password" name="password" autocomplete="new-password" placeholder="8 أحرف على الأقل" minlength="8" required>
+        </div>
+        <button class="btn btn-large btn-block" type="submit">إنشاء الحساب وبدء الإعداد ←</button>
+      </form>
+      <p class="auth-terms">بإنشاء الحساب أنت توافق على استخدام المنصة كأداة تخطيط، وتبقى مسؤولًا عن مراجعة المحتوى والادعاءات قبل النشر.</p>
+      <p class="auth-switch">لديك حساب؟ <a href="{{ url_for('auth.login') }}">سجّل الدخول</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

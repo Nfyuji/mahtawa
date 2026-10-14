@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 from datetime import date, timedelta
 from typing import Any
 
 from app.extensions import db
 from app.models import Brand, ContentItem, ContentPillar, ContentScript, Strategy
+from app.services.gpt_ideas import GPTIdeaGenerator
 from app.services.hook_science import HookScienceEngine
 from app.services.playbook import SOURCE_CATALOG, build_idea_bank, build_strategy_brief
 from app.services.scenario import ScenarioEngine
@@ -19,17 +21,40 @@ FORMAT_LABELS = {
 
 
 class StrategyGenerator:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        openai_api_key: str = "",
+        openai_base_url: str = "https://api.openai.com/v1",
+        openai_model: str = "gpt-4o",
+    ) -> None:
         self.hooks = HookScienceEngine()
         self.scenarios = ScenarioEngine()
+        self.openai_api_key = openai_api_key.strip()
+        self.openai_base_url = openai_base_url
+        self.openai_model = openai_model
+        self.generation_source = "local"
 
     def generate(self, brand: Brand) -> Strategy:
         start = brand.campaign_start_date or date.today()
         platforms = brand.platforms or ["tiktok", "instagram"]
-        posts_per_week = max(2, min(7, brand.posts_per_week or 5))
-        item_count = max(12, min(28, posts_per_week * 4))
+        item_count = 30
         brief = build_strategy_brief(brand, item_count)
-        ideas = build_idea_bank(brand, brief["pillars"], item_count)
+        if self.openai_api_key:
+            ideas = GPTIdeaGenerator(
+                api_key=self.openai_api_key,
+                base_url=self.openai_base_url,
+                model=self.openai_model,
+            ).generate(brand, brief, item_count)
+            self.generation_source = "openai"
+        else:
+            ideas = build_idea_bank(brand, brief["pillars"], item_count)
+            self.generation_source = "local"
+        brief["generation"] = {
+            "source": self.generation_source,
+            "model": self.openai_model if self.generation_source == "openai" else None,
+            "count": item_count,
+        }
         version = max((strategy.version or 1 for strategy in brand.strategies), default=0) + 1
 
         strategy = Strategy(
@@ -41,7 +66,11 @@ class StrategyGenerator:
             executive_summary=(
                 f"مسودة تنفيذية من {item_count} قطعة محتوى موزعة على "
                 f"{len(platforms)} منصة، مبنية على هدف الشركة وقدرتها الأسبوعية. "
-                "الفرص الرائجة المقترحة فرضيات يجب التحقق منها قبل النشر."
+                + (
+                    f"الأفكار والسيناريوهات ولّدها {self.openai_model} من بيانات الشركة."
+                    if self.generation_source == "openai"
+                    else "استُخدم المحرك المحلي لأن مفتاح OpenAI غير مهيأ."
+                )
             ),
             market_summary=(
                 f"الجمهور: {brand.audience}. المشكلة: {brand.problem}. "
@@ -142,8 +171,33 @@ class StrategyGenerator:
         self, item: ContentItem, brand: Brand, prompt: str = ""
     ) -> ContentScript:
         idea = self._idea_from_item(item)
+        if self.openai_api_key:
+            brief = build_strategy_brief(brand, 1)
+            focus = (
+                "أعد كتابة فكرة واحدة مع الحفاظ على موضوعها الأساسي، لكن حسّن "
+                "الخطافات والكلام المنطوق ونص الشاشة وتعليمات التصوير. "
+                "لا تحولها إلى موضوع آخر.\n"
+                f"الفكرة الحالية:\n{json.dumps(idea, ensure_ascii=False)}\n"
+                f"ملاحظة المستخدم: {prompt or 'لا توجد؛ حسّنها فقط.'}"
+            )
+            idea = GPTIdeaGenerator(
+                api_key=self.openai_api_key,
+                base_url=self.openai_base_url,
+                model=self.openai_model,
+            ).generate(brand, brief, 1, focus=focus)[0]
+            idea.update(
+                {
+                    "platform": item.platform,
+                    "content_type": item.content_type or "short_video",
+                    "post_goal": idea["goal"],
+                }
+            )
+            item.title = idea["title"]
+            item.pillar_name = idea["pillar"]
+            item.post_goal = idea["goal"]
+            item.rationale = idea["rationale"]
         pack = self.scenarios.build(idea, brand, item.day_number or 1)
-        if prompt:
+        if prompt and not self.openai_api_key:
             note = f"\n\nملاحظة الفريق: {prompt}"
             pack["scenes"] = (pack.get("scenes") or "") + note
             pack["script"]["body"] = (pack["script"].get("body") or "") + note
@@ -210,6 +264,9 @@ class StrategyGenerator:
             "effort": meta.get("effort"),
             "evidence_type": "hypothesis",
             "source_keys": meta.get("source_keys") or [],
+            "say": meta.get("say") or {},
+            "screen": meta.get("screen") or {},
+            "shots": meta.get("shots") or {},
         }
 
     def _score(self, idea: dict, brand: Brand, pack: dict) -> tuple[int, dict]:
@@ -250,6 +307,9 @@ class StrategyGenerator:
             "idea_points": idea.get("points") or [],
             "visual": idea.get("visual"),
             "promise": idea.get("promise"),
+            "say": idea.get("say") or {},
+            "screen": idea.get("screen") or {},
+            "shots": idea.get("shots") or {},
             "hook_scores": self._evaluate_hooks(
                 pack.get("hooks") or [], brand.audience or ""
             ),

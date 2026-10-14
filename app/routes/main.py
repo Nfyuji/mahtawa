@@ -19,6 +19,7 @@ from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Brand, ContentItem
+from app.services.gpt_ideas import GPTGenerationError
 from app.services.playbook import SOURCE_CATALOG
 from app.services.strategy import StrategyGenerator
 
@@ -27,6 +28,20 @@ main_bp = Blueprint("main", __name__)
 PLATFORM_KEYS = ("tiktok", "instagram", "youtube", "x", "facebook")
 MARKETS = {"saudi", "gulf", "mena", "global"}
 OBJECTIVES = {"awareness", "leads", "sales", "community"}
+
+
+def _strategy_generator() -> StrategyGenerator:
+    api_key = (
+        (current_user.openai_api_key or "").strip()
+        or (current_app.config.get("OPENAI_API_KEY") or "").strip()
+    )
+    return StrategyGenerator(
+        openai_api_key=api_key,
+        openai_base_url=current_app.config.get(
+            "OPENAI_BASE_URL", "https://api.openai.com/v1"
+        ),
+        openai_model=current_app.config.get("OPENAI_MODEL", "gpt-4o"),
+    )
 
 
 def _active_brand() -> Optional[Brand]:
@@ -167,9 +182,26 @@ def strategy_page():
         if brand.profile_completeness < 55:
             flash("أكمل البيانات الأساسية قبل إنشاء الاستراتيجية.", "error")
             return redirect(url_for("main.brand_page"))
-        strategy = StrategyGenerator().generate(brand)
+        generator = _strategy_generator()
+        if not generator.openai_api_key:
+            flash(
+                "التوليد الآن يعتمد على GPT. أضف OPENAI_API_KEY في إعدادات بيئة الخادم أولًا.",
+                "error",
+            )
+            return redirect(url_for("main.settings_page"))
+        try:
+            strategy = generator.generate(brand)
+        except GPTGenerationError as exc:
+            db.session.rollback()
+            flash(f"تعذر التوليد عبر GPT: {exc}", "error")
+            return redirect(url_for("main.strategy_page"))
+        source = (
+            f"GPT ({current_app.config.get('OPENAI_MODEL', 'gpt-4o')})"
+            if generator.generation_source == "openai"
+            else "المحرك المحلي — أضف OPENAI_API_KEY لتفعيل GPT"
+        )
         flash(
-            f"تم إنشاء الإصدار {strategy.version} وفيه {len(strategy.items)} قطعة محتوى قابلة للاختبار.",
+            f"تم إنشاء الإصدار {strategy.version}: {len(strategy.items)} فكرة عبر {source}.",
             "success",
         )
         return redirect(url_for("main.strategy_page"))
@@ -274,14 +306,22 @@ def studio_page():
 
     if request.method == "POST" and selected and brand:
         action = request.form.get("action") or "regenerate"
-        generator = StrategyGenerator()
+        generator = _strategy_generator()
         if action == "select_hook":
             hook_index = _bounded_int(request.form.get("hook_index"), 0, 0, 4)
             generator.select_hook(selected, hook_index)
             flash("تم اعتماد الخطاف داخل حزمة التنفيذ.", "success")
         else:
+            if not generator.openai_api_key:
+                flash("أضف OPENAI_API_KEY لتحديث السيناريو عبر GPT.", "error")
+                return redirect(url_for("main.settings_page"))
             prompt = (request.form.get("prompt") or "").strip()
-            generator.regenerate_script(selected, brand, prompt=prompt)
+            try:
+                generator.regenerate_script(selected, brand, prompt=prompt)
+            except GPTGenerationError as exc:
+                db.session.rollback()
+                flash(f"تعذر تحديث السيناريو عبر GPT: {exc}", "error")
+                return redirect(url_for("main.studio_page", item=selected.id))
             flash("تم تحديث حزمة التنفيذ مع الحفاظ على الفكرة.", "success")
         return redirect(url_for("main.studio_page", item=selected.id))
 
@@ -305,7 +345,11 @@ def settings_page():
 
     brand = _active_brand()
     integration_state = {
-        "openai": bool(current_app.config.get("OPENAI_API_KEY")),
+        "openai": bool(
+            current_user.openai_api_key
+            or current_app.config.get("OPENAI_API_KEY")
+        ),
+        "openai_model": current_app.config.get("OPENAI_MODEL", "gpt-4o"),
         "youtube": bool(current_app.config.get("YOUTUBE_API_KEY")),
     }
     return render_template(

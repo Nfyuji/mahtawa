@@ -11,7 +11,7 @@
     {% if strategy %}<a class="btn btn-ghost" href="{{ url_for('main.export_strategy_csv') }}">تصدير CSV</a>{% endif %}
     <form method="post">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <button class="btn" type="submit" data-loading-label="جارٍ تركيب المسودة…">{% if strategy %}إنشاء إصدار جديد{% else %}إنشاء مسودة الاستراتيجية{% endif %} ←</button>
+      <button class="btn" type="submit" data-loading-label="GPT يبني 30 فكرة وسيناريو…">{% if strategy %}إنشاء إصدار جديد بـ GPT{% else %}إنشاء الاستراتيجية بـ GPT{% endif %} ←</button>
     </form>
   </div>
 </div>
@@ -21,10 +21,10 @@
   <section class="empty-state span-2">
     <span class="empty-icon">{{ brand.profile_completeness }}%</span>
     <h2>ملف {{ brand.name }} جاهز للمسودة الأولى</h2>
-    <p>سننشئ تموضعًا، أربعة محاور، أدوار القنوات، خطة أربعة أسابيع، فرصًا تحتاج تحققًا، و{{ brand.posts_per_week * 4 }} حزمة محتوى تقريبًا.</p>
+    <p>سيقرأ GPT ملف الشركة ويبني تموضعًا، أربعة محاور، خطة أربعة أسابيع، و30 فكرة وسيناريو مختلفًا.</p>
     <form method="post">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-large" type="submit" data-loading-label="جارٍ بناء القرارات والأفكار…">ابدأ بناء الاستراتيجية ←</button>
+      <button class="btn btn-large" type="submit" data-loading-label="GPT يبني 30 فكرة وسيناريو…">ابدأ التوليد عبر GPT ←</button>
     </form>
   </section>
   <section class="card assumption-card">
@@ -42,6 +42,18 @@
 {% set objective = data.get('objective', {}) %}
 {% set positioning = data.get('positioning', {}) %}
 {% set measurement = data.get('measurement', {}) %}
+{% set generation = data.get('generation', {}) %}
+
+<div class="notice notice-neutral">
+  <strong>مصدر التوليد</strong>
+  <span>
+    {% if generation.get('source') == 'openai' %}
+      GPT عبر OpenAI · النموذج {{ generation.get('model') }} · {{ generation.get('count', 30) }} فكرة
+    {% else %}
+      المحرك المحلي · أضف OPENAI_API_KEY في الخادم لتفعيل GPT
+    {% endif %}
+  </span>
+</div>
 
 <nav class="section-nav" aria-label="أقسام الاستراتيجية">
   <a href="#decision">القرار</a><a href="#pillars">المحاور</a><a href="#channels">القنوات</a><a href="#sprints">خطة الأسابيع</a><a href="#trends">فرص الترند</a><a href="#measurement">القياس</a>

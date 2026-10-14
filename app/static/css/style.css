@@ -484,8 +484,8 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .hook-signals { grid-column: 2; display: flex; flex-wrap: wrap; gap: .35rem; }
 .hook-signals span { color: #737d93; font-size: .54rem; }
 .hook-actions { grid-column: 3; grid-row: 1 / span 2; display: flex; align-items: center; gap: .55rem; }
-.execution-text, .compact-text { white-space: pre-wrap; overflow: auto; margin: 0; padding: 1rem; background: #090d18; border: 1px solid var(--line); border-radius: 12px; color: #dfe3ec; font-family: "IBM Plex Sans Arabic", sans-serif; font-size: .76rem; line-height: 2; }
-.execution-text { max-height: 620px; }.compact-text { max-height: 390px; }
+.execution-text, .compact-text { white-space: pre-wrap; overflow: auto; margin: 0; padding: 1.1rem 1.2rem; background: #090d18; border: 1px solid var(--line); border-radius: 12px; color: #e8ebf2; font-family: "IBM Plex Sans Arabic", sans-serif; font-size: .84rem; line-height: 1.85; letter-spacing: .01em; }
+.execution-text { max-height: 680px; }.compact-text { max-height: 390px; }
 .execution-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .8rem; }
 .brief-list { display: grid; gap: .7rem; }
 .brief-list > div { padding-bottom: .6rem; border-bottom: 1px solid var(--line); }

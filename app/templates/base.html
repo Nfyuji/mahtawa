@@ -51,7 +51,7 @@
         <span class="nav-dot"></span>حزمة التنفيذ
       </a>
       <span class="nav-label">النظام</span>
-      <a href="{{ url_for('main.settings_page') }}" class="{% if request.endpoint == 'main.settings_page' %}active{% endif %}">
+      <a href="{{ url_for('main.settings_page') }}" class="{% if request.endpoint in ['main.settings_page','main.export_all_data_xlsx'] %}active{% endif %}">
         <span class="nav-dot"></span>الإعدادات والمصادر
       </a>
     </nav>

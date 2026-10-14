@@ -19,6 +19,7 @@ from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import Brand, ContentItem
+from app.services.data_export import build_user_workbook, export_filename
 from app.services.gpt_ideas import GPTGenerationError
 from app.services.key_vault import decrypt_api_key, encrypt_api_key
 from app.services.playbook import SOURCE_CATALOG
@@ -338,6 +339,22 @@ def studio_page():
 
     return render_template(
         "studio.html", brand=brand, items=items, selected=selected
+    )
+
+
+@main_bp.route("/app/settings/export.xlsx")
+@login_required
+def export_all_data_xlsx():
+    """Download the signed-in user's full workspace as Excel (no secrets)."""
+    buffer = build_user_workbook(current_user)
+    filename = export_filename(current_user)
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-store",
+        },
     )
 
 

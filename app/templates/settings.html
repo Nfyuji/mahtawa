@@ -48,6 +48,18 @@
     <div class="notice notice-neutral compact"><strong>الأمان</strong><span>يُشفّر المفتاح قبل تخزينه، ولا يُرسل للمتصفح بعد الحفظ. لا تلصقه في GitHub.</span></div>
   </section>
 
+  <section class="card export-card">
+    <span class="card-kicker">نسخة احتياطية</span><h2>تنزيل بياناتك</h2>
+    <p class="card-intro">حمّل ملف Excel فيه كل بيانات مساحتك: ملف الشركة، الاستراتيجيات، تقويم المحتوى، السيناريوهات، والنصوص المفصلة.</p>
+    <ul class="plain-list export-list">
+      <li>الحساب وملف الشركة</li>
+      <li>كل إصدارات الاستراتيجية والمحاور</li>
+      <li>تقويم المحتوى + السيناريوهات الكاملة</li>
+    </ul>
+    <a class="btn btn-large" href="{{ url_for('main.export_all_data_xlsx') }}">تنزيل ملف Excel ←</a>
+    <div class="notice notice-neutral compact"><strong>خصوصية</strong><span>الملف لا يتضمن كلمة المرور ولا مفتاح OpenAI.</span></div>
+  </section>
+
   <section class="card integration-card">
     <span class="card-kicker">حالة النظام</span><h2>التكاملات</h2>
     <div class="integration-list">

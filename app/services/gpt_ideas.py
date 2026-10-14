@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 import requests
@@ -18,7 +17,11 @@ FORMATS = {"short_video", "carousel", "text_post", "story"}
 
 
 class GPTIdeaGenerator:
-    """Generate brand-specific content ideas using OpenAI structured output."""
+    """Generate brand-specific content ideas using OpenAI structured output.
+
+    Keeps the GPT payload light so Render free-tier requests finish before the
+    reverse-proxy timeout. Full spoken scripts are assembled locally afterwards.
+    """
 
     def __init__(
         self,
@@ -26,7 +29,7 @@ class GPTIdeaGenerator:
         api_key: str,
         base_url: str,
         model: str,
-        timeout: int = 150,
+        timeout: int = 75,
     ) -> None:
         if not api_key:
             raise GPTGenerationError("مفتاح OpenAI غير موجود.")
@@ -47,37 +50,24 @@ class GPTIdeaGenerator:
             "مشكلات الجمهور ولحظات الألم اليومية، مع أمثلة محددة",
             "تعليم عملي، مقارنات، اعتراضات، وإثبات خبرة",
             "قصص استخدام المنتج، تحويل، تفاعل، وتجارب قابلة للقياس",
+            "أخطاء شائعة وأسئلة متكررة من الجمهور",
+            "قبل/بعد ونتائج عملية قابلة للتصوير",
         )
-        jobs = []
-        with ThreadPoolExecutor(max_workers=min(3, len(batch_sizes))) as pool:
-            for index, size in enumerate(batch_sizes):
-                jobs.append(
-                    pool.submit(
-                        self._generate_batch,
-                        brand,
-                        brief,
-                        size,
-                        index + 1,
-                        len(batch_sizes),
-                        angles[index % len(angles)],
-                        focus,
-                    )
-                )
 
-            batches: dict[int, list[dict[str, Any]]] = {}
-            try:
-                for future in as_completed(jobs):
-                    batch_number, ideas = future.result()
-                    batches[batch_number] = ideas
-            except Exception:
-                for future in jobs:
-                    future.cancel()
-                raise
-
+        # Sequential batches are safer on Render free memory and avoid worker kills.
         combined: list[dict[str, Any]] = []
         seen: set[str] = set()
-        for batch_number in sorted(batches):
-            for raw in batches[batch_number]:
+        for index, size in enumerate(batch_sizes):
+            raw_ideas = self._generate_batch(
+                brand,
+                brief,
+                size,
+                index + 1,
+                len(batch_sizes),
+                angles[index % len(angles)],
+                focus,
+            )
+            for raw in raw_ideas:
                 idea = self._validate_idea(raw, brand, brief)
                 key = self._normalise_title(idea["title"])
                 if key in seen:
@@ -101,10 +91,10 @@ class GPTIdeaGenerator:
         total_batches: int,
         angle: str,
         focus: str,
-    ) -> tuple[int, list[dict[str, Any]]]:
+    ) -> list[dict[str, Any]]:
         payload = {
             "model": self.model,
-            "temperature": 0.8,
+            "temperature": 0.75,
             "messages": [
                 {
                     "role": "system",
@@ -112,8 +102,7 @@ class GPTIdeaGenerator:
                         "أنت استراتيجي محتوى عربي خبير في الفيديو القصير. "
                         "اكتب أفكارًا أصلية ومحددة للنشاط المرسل، لا قوالب عامة. "
                         "لا تخترع أرقام نتائج أو شهادات أو مزايا لم يذكرها المستخدم. "
-                        "كل فكرة يجب أن تكون مختلفة، قابلة للتصوير بالموارد المتاحة، "
-                        "وبلغة عربية طبيعية توافق صوت البراند. أخرج JSON فقط."
+                        "كل فكرة يجب أن تكون مختلفة وقابلة للتصوير. أخرج JSON فقط."
                     ),
                 },
                 {
@@ -147,10 +136,8 @@ class GPTIdeaGenerator:
         except (KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
             raise GPTGenerationError("رد GPT لم يكن بصيغة مفهومة.") from exc
         if not isinstance(ideas, list) or len(ideas) != size:
-            raise GPTGenerationError(
-                f"دفعة GPT رقم {batch_number} غير مكتملة."
-            )
-        return batch_number, ideas
+            raise GPTGenerationError(f"دفعة GPT رقم {batch_number} غير مكتملة.")
+        return ideas
 
     def _post(self, payload: dict[str, Any]) -> dict[str, Any]:
         url = f"{self.base_url}/chat/completions"
@@ -167,6 +154,12 @@ class GPTIdeaGenerator:
                     json=payload,
                     timeout=self.timeout,
                 )
+            except requests.Timeout as exc:
+                last_error = "انتهت مهلة الاتصال بـ OpenAI. حاول مرة أخرى."
+                if attempt < 2:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                raise GPTGenerationError(last_error) from exc
             except requests.RequestException as exc:
                 last_error = "تعذر الاتصال بخدمة OpenAI."
                 if attempt < 2:
@@ -209,17 +202,14 @@ class GPTIdeaGenerator:
             "name": brand.name,
             "description": brand.description,
             "industry": brand.industry,
-            "business_model": brand.business_model,
             "offer": brand.offer,
             "market": brand.market,
             "dialect": brand.dialect,
             "audience": brand.audience,
             "problem": brand.problem,
             "audience_desire": brand.audience_desire,
-            "customer_stage": brand.customer_stage,
             "competitive_advantage": brand.competitive_advantage,
             "brand_voice": brand.brand_voice,
-            "competitors": brand.competitors,
             "resources": brand.resources,
             "marketing_objective": brand.marketing_objective,
             "monthly_goal": brand.monthly_goal,
@@ -234,9 +224,7 @@ class GPTIdeaGenerator:
             for p in pillars
         ]
         focus_block = (
-            f"\n\nتعليمات خاصة لهذه المهمة:\n{focus}\n"
-            if focus.strip()
-            else ""
+            f"\n\nتعليمات خاصة لهذه المهمة:\n{focus}\n" if focus.strip() else ""
         )
         return (
             f"أنشئ {size} أفكار ضمن الدفعة {batch_number} من {total_batches}.\n"
@@ -248,18 +236,12 @@ class GPTIdeaGenerator:
             "2) لا تكرر موضوعًا أو عنوانًا داخل الدفعة.\n"
             "3) العنوان والخطافات محددة لهذا النشاط وليست نصائح تسويق عامة.\n"
             "4) hooks خمس افتتاحيات قوية ومختلفة بهذا الترتيب: "
-            "(أ) ألم محدد يتعرف عليه الجمهور، (ب) فجوة فضول، "
-            "(ج) رأي مخالف قابل للإثبات، (د) نتيجة أو آلية محددة بلا أرقام مختلقة، "
-            "(هـ) افتتاح بصري يصف ما سيراه المشاهد. "
-            "كل خطاف جملة واحدة، 5–12 كلمة، يبدأ من أول نفس، بلا تحية أو مقدمة "
-            "أو عبارة «هل تعلم»، ويجب أن يوفي محتوى الفيديو بوعده.\n"
+            "(أ) ألم محدد، (ب) فجوة فضول، (ج) رأي مخالف، "
+            "(د) نتيجة أو آلية محددة بلا أرقام مختلقة، (هـ) افتتاح بصري. "
+            "كل خطاف جملة واحدة، 5–12 كلمة، يبدأ من أول نفس، بلا تحية.\n"
             "5) points ثلاث نقاط فعلية تكمل وعد الخطاف.\n"
-            "6) say هو الكلام الحرفي الذي سيقوله المصور بلهجة البراند؛ "
-            "جملة قصيرة طبيعية لكل مرحلة.\n"
-            "7) screen نصوص من 2–6 كلمات، وليست نسخًا كاملًا من الكلام.\n"
-            "8) shots تعليمات تصوير مفهومة بالجوال ومن الموارد المذكورة.\n"
-            "9) لا تقل الأفضل أو مضمون أو أرقام غير موجودة في البيانات.\n"
-            "10) وزّع الأهداف، ولا تجعل كل الأفكار ترويجًا مباشرًا."
+            "6) لا تقل الأفضل أو مضمون أو أرقام غير موجودة في البيانات.\n"
+            "7) وزّع الأهداف، ولا تجعل كل الأفكار ترويجًا مباشرًا."
             + focus_block
         )
 
@@ -290,60 +272,82 @@ class GPTIdeaGenerator:
         ]
         if not formats:
             formats = ["short_video"]
-
-        say = self._clean_mapping(
-            raw.get("say"),
-            ("hook", "bridge", "p1", "p2", "p3", "proof", "cta"),
-            220,
-        )
-        screen = self._clean_mapping(
-            raw.get("screen"),
-            ("hook", "bridge", "p1", "p2", "p3", "proof", "cta"),
-            70,
-        )
-        shots = self._clean_mapping(
-            raw.get("shots"),
-            ("hook", "bridge", "p1", "p2", "p3", "proof", "cta"),
-            180,
-        )
         if len(hooks) < 5 or len(points) < 3:
             raise GPTGenerationError("إحدى أفكار GPT ناقصة الخطافات أو النقاط.")
 
+        problem = self._clean(raw.get("problem"), 280)
+        promise = self._clean(raw.get("promise"), 220)
+        visual = self._clean(raw.get("visual"), 240)
+        cta = self._clean(raw.get("cta"), 120)
+        title = self._clean(raw.get("title"), 180)
+        name = getattr(brand, "name", "النشاط")
+
+        # Build spoken/screen/shot packs locally so GPT stays fast and reliable.
+        script = self._local_script(hooks[0], problem, promise, points, visual, cta, name)
+
         return {
-            "title": self._clean(raw.get("title"), 180),
+            "title": title,
             "pillar": pillar,
             "goal": goal,
             "hook_archetype": archetype,
             "hooks": hooks,
-            "problem": self._clean(raw.get("problem"), 280),
+            "problem": problem,
             "points": points,
-            "visual": self._clean(raw.get("visual"), 240),
-            "promise": self._clean(raw.get("promise"), 220),
-            "cta": self._clean(raw.get("cta"), 120),
+            "visual": visual,
+            "promise": promise,
+            "cta": cta,
             "rationale": self._clean(raw.get("rationale"), 260),
             "format_options": formats,
             "success_metric": self._clean(raw.get("success_metric"), 120),
             "repurpose": self._clean(raw.get("repurpose"), 180),
-            "effort": self._clean(raw.get("effort"), 30),
+            "effort": self._clean(raw.get("effort"), 30) or "متوسط",
             "evidence_type": "hypothesis",
             "source_keys": [],
-            "say": say,
-            "screen": screen,
-            "shots": shots,
+            **script,
         }
 
-    def _clean_mapping(
+    def _local_script(
         self,
-        value: Any,
-        keys: tuple[str, ...],
-        limit: int,
-    ) -> dict[str, str]:
-        if not isinstance(value, dict):
-            raise GPTGenerationError("إحدى أفكار GPT ناقصة السيناريو.")
-        result = {key: self._clean(value.get(key), limit) for key in keys}
-        if any(not text for text in result.values()):
-            raise GPTGenerationError("إحدى أفكار GPT تحتوي سيناريو ناقصًا.")
-        return result
+        hook: str,
+        problem: str,
+        promise: str,
+        points: list[str],
+        visual: str,
+        cta: str,
+        name: str,
+    ) -> dict[str, dict[str, str]]:
+        say = {
+            "hook": hook.rstrip(".") + ".",
+            "bridge": f"{problem}. والوعد: {promise}.",
+            "p1": points[0].rstrip(".") + ".",
+            "p2": points[1].rstrip(".") + ".",
+            "p3": points[2].rstrip(".") + ".",
+            "proof": f"شوف هنا: {visual}.",
+            "cta": cta.rstrip(".") + ".",
+        }
+        screen = {
+            "hook": self._screen_line(hook),
+            "bridge": self._screen_line(problem),
+            "p1": self._screen_line(points[0]),
+            "p2": self._screen_line(points[1]),
+            "p3": self._screen_line(points[2]),
+            "proof": self._screen_line(visual),
+            "cta": self._screen_line(cta),
+        }
+        shots = {
+            "hook": "وجه للكاميرا أو نص كبير فورًا — بدون شعار",
+            "bridge": "مثال بصري سريع للمشكلة",
+            "p1": f"لقطة أو شاشة توضّح: {self._screen_line(points[0], 4)}",
+            "p2": "غيّر الزاوية مع نص مختصر",
+            "p3": f"اعرض التطبيق داخل {name}",
+            "proof": visual,
+            "cta": "ثبّت آخر صورة مع نص الدعوة",
+        }
+        return {"say": say, "screen": screen, "shots": shots}
+
+    def _screen_line(self, text: str, max_words: int = 6) -> str:
+        words = [w for w in (text or "").replace("—", " ").split() if w]
+        return " ".join(words[:max_words]) if words else "…"
 
     def _clean_list(self, value: Any, count: int, limit: int) -> list[str]:
         if not isinstance(value, list):
@@ -372,18 +376,17 @@ class GPTIdeaGenerator:
         return self._clean(detail, 180) or f"HTTP {response.status_code}"
 
     def _batch_sizes(self, count: int) -> list[int]:
-        batch_count = min(3, max(1, (count + 9) // 10))
+        # Prefer 1–2 larger light batches so Render finishes before proxy timeout.
+        if count <= 15:
+            return [count]
+        if count <= 30:
+            first = (count + 1) // 2
+            return [first, count - first]
+        batch_count = min(3, max(1, (count + 14) // 15))
         base, remainder = divmod(count, batch_count)
         return [base + (1 if index < remainder else 0) for index in range(batch_count)]
 
     def _schema(self, size: int) -> dict[str, Any]:
-        stage_keys = ["hook", "bridge", "p1", "p2", "p3", "proof", "cta"]
-        stage_object = {
-            "type": "object",
-            "additionalProperties": False,
-            "properties": {key: {"type": "string"} for key in stage_keys},
-            "required": stage_keys,
-        }
         idea_properties = {
             "title": {"type": "string"},
             "pillar": {"type": "string"},
@@ -415,9 +418,6 @@ class GPTIdeaGenerator:
             "success_metric": {"type": "string"},
             "repurpose": {"type": "string"},
             "effort": {"type": "string", "enum": ["خفيف", "متوسط", "مرتفع"]},
-            "say": stage_object,
-            "screen": stage_object,
-            "shots": stage_object,
         }
         return {
             "type": "object",

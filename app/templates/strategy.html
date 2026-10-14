@@ -11,7 +11,7 @@
     {% if strategy %}<a class="btn btn-ghost" href="{{ url_for('main.export_strategy_csv') }}">تصدير CSV</a>{% endif %}
     <form method="post">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <button class="btn" type="submit" data-loading-label="GPT يبني 30 فكرة وسيناريو…">{% if strategy %}إنشاء إصدار جديد بـ GPT{% else %}إنشاء الاستراتيجية بـ GPT{% endif %} ←</button>
+      <button class="btn" type="submit" data-loading-label="GPT يولّد الآن… قد يستغرق حتى دقيقة">{% if strategy %}إنشاء إصدار جديد بـ GPT{% else %}إنشاء الاستراتيجية بـ GPT{% endif %} ←</button>
     </form>
   </div>
 </div>
@@ -24,7 +24,7 @@
     <p>سيقرأ GPT ملف الشركة ويبني تموضعًا، أربعة محاور، خطة أربعة أسابيع، و30 فكرة وسيناريو مختلفًا.</p>
     <form method="post">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-large" type="submit" data-loading-label="GPT يبني 30 فكرة وسيناريو…">ابدأ التوليد عبر GPT ←</button>
+      <button class="btn btn-large" type="submit" data-loading-label="GPT يولّد الآن… قد يستغرق حتى دقيقة">ابدأ التوليد عبر GPT ←</button>
     </form>
   </section>
   <section class="card assumption-card">

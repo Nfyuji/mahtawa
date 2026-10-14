@@ -200,6 +200,15 @@ def strategy_page():
             db.session.rollback()
             flash(f"تعذر التوليد عبر GPT: {exc}", "error")
             return redirect(url_for("main.strategy_page"))
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("strategy_generation_failed")
+            flash(
+                "انقطع التوليد أو استغرق وقتًا طويلًا. انتظر قليلًا ثم أعد المحاولة. "
+                "تأكد أن مفتاح OpenAI صالح وأن الرصيد كافٍ.",
+                "error",
+            )
+            return redirect(url_for("main.strategy_page"))
         source = (
             f"GPT ({current_app.config.get('OPENAI_MODEL', 'gpt-4o')})"
             if generator.generation_source == "openai"

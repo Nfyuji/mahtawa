@@ -247,7 +247,12 @@ class GPTIdeaGenerator:
             "1) استخدم اسم محور موجود حرفيًا في pillar.\n"
             "2) لا تكرر موضوعًا أو عنوانًا داخل الدفعة.\n"
             "3) العنوان والخطافات محددة لهذا النشاط وليست نصائح تسويق عامة.\n"
-            "4) hooks ثلاث افتتاحيات مختلفة، قصيرة، قابلة للنطق، بلا مبالغة.\n"
+            "4) hooks خمس افتتاحيات قوية ومختلفة بهذا الترتيب: "
+            "(أ) ألم محدد يتعرف عليه الجمهور، (ب) فجوة فضول، "
+            "(ج) رأي مخالف قابل للإثبات، (د) نتيجة أو آلية محددة بلا أرقام مختلقة، "
+            "(هـ) افتتاح بصري يصف ما سيراه المشاهد. "
+            "كل خطاف جملة واحدة، 5–12 كلمة، يبدأ من أول نفس، بلا تحية أو مقدمة "
+            "أو عبارة «هل تعلم»، ويجب أن يوفي محتوى الفيديو بوعده.\n"
             "5) points ثلاث نقاط فعلية تكمل وعد الخطاف.\n"
             "6) say هو الكلام الحرفي الذي سيقوله المصور بلهجة البراند؛ "
             "جملة قصيرة طبيعية لكل مرحلة.\n"
@@ -276,7 +281,7 @@ class GPTIdeaGenerator:
         if archetype not in ARCHETYPES:
             archetype = "pain"
 
-        hooks = self._clean_list(raw.get("hooks"), 3, 90)
+        hooks = self._clean_list(raw.get("hooks"), 5, 90)
         points = self._clean_list(raw.get("points"), 3, 180)
         formats = [
             value
@@ -301,7 +306,7 @@ class GPTIdeaGenerator:
             ("hook", "bridge", "p1", "p2", "p3", "proof", "cta"),
             180,
         )
-        if len(hooks) < 3 or len(points) < 3:
+        if len(hooks) < 5 or len(points) < 3:
             raise GPTGenerationError("إحدى أفكار GPT ناقصة الخطافات أو النقاط.")
 
         return {
@@ -387,8 +392,8 @@ class GPTIdeaGenerator:
             "hooks": {
                 "type": "array",
                 "items": {"type": "string"},
-                "minItems": 3,
-                "maxItems": 3,
+                "minItems": 5,
+                "maxItems": 5,
             },
             "problem": {"type": "string"},
             "points": {

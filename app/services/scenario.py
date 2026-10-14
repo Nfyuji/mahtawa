@@ -34,13 +34,20 @@ class ScenarioEngine:
         caption = idea.get("caption") or f"{title}\n\n{promise}\n\n{cta}"
 
         hook_pack = self.hooks.craft_hooks(idea, brand, day)
-        hooks = []
-        for hook in [hook_pack["primary"], *hook_pack["alts"], *(idea.get("hooks") or [])]:
+        provided_hooks = [
+            str(hook).strip() for hook in (idea.get("hooks") or []) if str(hook).strip()
+        ]
+        source_hooks = (
+            provided_hooks
+            if len(provided_hooks) >= 5
+            else [hook_pack["primary"], *hook_pack["alts"], *provided_hooks]
+        )
+        candidates = []
+        for hook in source_hooks:
             clean = str(hook).strip()
-            if clean and clean not in hooks:
-                hooks.append(clean)
-            if len(hooks) >= 5:
-                break
+            if clean and clean not in candidates:
+                candidates.append(clean)
+        hooks = self.hooks.rank_hooks(candidates, idea, brand)[:5]
         hook = hooks[0] if hooks else title
         platform_label, platform_tip = self._platform(platform)
 

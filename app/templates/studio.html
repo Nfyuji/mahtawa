@@ -38,14 +38,15 @@
 
     <section class="card hook-lab">
       <div class="card-head"><div><span class="card-kicker">A/B Hook Lab</span><h2>اختر افتتاحية واحدة للاختبار</h2></div><span class="estimate-label">التقييم داخلي للمفاضلة فقط</span></div>
-      <p class="card-intro">ثبّت بقية الحزمة قدر الإمكان عند مقارنة نسختين. لا تعلن فائزًا من مشاهدة واحدة أو عينة صغيرة.</p>
+      <p class="card-intro">الأول هو الأقوى بحسب الوضوح والارتباط والفضول والتحديد والمصداقية. هذا ترتيب للاختبار، وليس ضمانًا للمشاهدات.</p>
+      <div class="notice notice-neutral compact"><strong>اختبار صحيح</strong><span>غيّر أول 3 ثوانٍ فقط وثبّت باقي الفيديو. قارن الاحتفاظ بعد 3 ثوانٍ، متوسط المشاهدة، الإكمال والمشاركة على عينة كافية.</span></div>
       <div class="hook-options">
         {% for hook in selected.hooks or [] %}
         {% set score = meta.get('hook_scores', [])[loop.index0] if meta.get('hook_scores') and loop.index0 < meta.get('hook_scores')|length else {} %}
         <article class="hook-option {% if loop.first %}selected{% endif %}">
           <div class="hook-rank"><span>{{ 'المعتمد' if loop.first else 'بديل ' ~ loop.index }}</span><strong>{{ score.get('score','—') }}</strong></div>
           <p>{{ hook }}</p>
-          <div class="hook-signals"><span>وضوح {{ score.get('clarity','—') }}</span><span>فضول {{ score.get('curiosity','—') }}</span><span>مصداقية {{ score.get('credibility','—') }}</span></div>
+          <div class="hook-signals"><span>وضوح {{ score.get('clarity','—') }}</span><span>فضول {{ score.get('curiosity','—') }}</span><span>تحديد {{ score.get('specificity','—') }}</span><span>مصداقية {{ score.get('credibility','—') }}</span></div>
           <div class="hook-actions">
             <button type="button" class="text-button" data-copy-text="{{ hook }}">نسخ</button>
             {% if not loop.first %}

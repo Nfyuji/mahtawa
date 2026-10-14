@@ -202,14 +202,14 @@ class HookScienceEngine:
                 f"الوقت ينتهي — {short_title.rstrip('؟')} يتغير الآن",
             ],
             "social_proof": [
-                f"أكثر من 1000 عميل جرّبوا هذا — وهذي النتيجة",
-                f"ليش الكل يتكلم عن {short_title.rstrip('؟')}؟ السبب بسيط",
-                f"شوف وش قالوا عن {name} بعد التجربة",
+                f"قبل ما تصدق أي نتيجة عن {short_title.rstrip('؟')} اطلب هذا الدليل",
+                "شهادة العميل وحدها ما تكفي — شوف التطبيق",
+                f"كيف تثبت قيمة {name} بدون أرقام مختلقة؟",
             ],
             "storytelling": [
                 f"السبب الحقيقي اللي خلاني أبدأ {name}",
                 f"كنت أقول مستحيل… لين جرّبت هالشي مع {short_problem}",
-                f"قصة عميل: من {short_problem} إلى نتيجة ما تصدقها",
+                f"هذا الموقف يشرح ليش {short_problem}",
             ],
             "challenge": [
                 f"تحدّي: جرّب هذا لمدة أسبوع واحد",
@@ -250,6 +250,82 @@ class HookScienceEngine:
             "mechanism": meta["mechanism"],
             "trigger": meta["trigger"],
             "power": meta["power"],
+        }
+
+    def rank_hooks(
+        self,
+        hooks: list[str],
+        idea: dict,
+        brand: Any,
+    ) -> list[str]:
+        """Rank candidates by preparation quality, never by promised views."""
+        unique: list[str] = []
+        for hook in hooks:
+            clean = " ".join(str(hook).split()).strip()
+            if clean and clean not in unique:
+                unique.append(clean)
+        scored = [
+            (self.evaluate_hook(hook, idea, brand)["score"], index, hook)
+            for index, hook in enumerate(unique)
+        ]
+        scored.sort(key=lambda row: (-row[0], row[1]))
+        return [hook for _, _, hook in scored]
+
+    def evaluate_hook(self, hook: str, idea: dict, brand: Any) -> dict[str, int]:
+        """Transparent 100-point estimate for choosing what to A/B test."""
+        text = " ".join(str(hook).split()).strip()
+        words = text.split()
+        problem = str(idea.get("problem") or idea.get("problem_desire") or "")
+        title = str(idea.get("title") or "")
+        audience = str(getattr(brand, "audience", "") or "")
+        context_terms = {
+            word.strip("،.:؟!?«»")
+            for word in f"{problem} {title} {audience}".split()
+            if len(word.strip("،.:؟!?«»")) >= 4
+        }
+
+        clarity = 20 if 5 <= len(words) <= 12 else 14 if 3 <= len(words) <= 16 else 7
+        relevance_hits = sum(1 for term in context_terms if term in text)
+        relevance = min(20, 10 + relevance_hits * 3)
+
+        curiosity_markers = (
+            "؟", "ليش", "كيف", "السبب", "قبل", "خطأ", "لكن",
+            "الحقيقة", "الفرق", "وش", "متى",
+        )
+        curiosity = min(15, 7 + sum(2 for marker in curiosity_markers if marker in text))
+
+        specificity_markers = (
+            "3", "5", "7", "دقيقة", "ثانية", "أسبوع", "خطوة",
+            "طريقة", "قالب", "واتساب", "تيك توك", "إنستغرام",
+        )
+        specificity = min(
+            15, 6 + sum(3 for marker in specificity_markers if marker in text)
+        )
+
+        spoken = 15
+        if len(text) > 90 or len(words) > 16:
+            spoken = 7
+        elif len(text) < 10:
+            spoken = 9
+
+        credibility = 15
+        overpromise = (
+            "مضمون", "أكيد", "100%", "الأفضل في العالم", "مليون مشاهدة",
+            "سر لا يعرفه أحد", "بتندم", "آخر فرصة",
+        )
+        if any(marker in text for marker in overpromise):
+            credibility = 4
+        elif any(marker in text for marker in ("الكل", "مستحيل", "ما تصدق")):
+            credibility = 9
+
+        score = clarity + relevance + curiosity + specificity + spoken + credibility
+        return {
+            "score": min(100, score),
+            "clarity": clarity * 5,
+            "curiosity": round(curiosity / 15 * 100),
+            "relevance": relevance * 5,
+            "specificity": round(specificity / 15 * 100),
+            "credibility": round(credibility / 15 * 100),
         }
 
     def build_scene_pack(

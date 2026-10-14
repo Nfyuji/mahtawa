@@ -210,11 +210,24 @@ class StrategyGenerator:
         if not hooks:
             return item.script
         hook_index = max(0, min(len(hooks) - 1, hook_index))
+        old_primary = hooks[0]
         selected = hooks.pop(hook_index)
         item.hooks = [selected, *hooks]
+        if selected != old_primary:
+            for field in (
+                "scenes",
+                "script_body",
+                "on_screen_text",
+                "creative_concept",
+            ):
+                value = getattr(item, field, None)
+                if value:
+                    setattr(item, field, value.replace(old_primary, selected))
         if item.script:
             item.script.hook = selected
             item.script.alt_hooks = hooks
+            if item.script.body:
+                item.script.body = item.script.body.replace(old_primary, selected)
         breakdown = dict(item.virality_breakdown or {})
         breakdown["hook_scores"] = self._evaluate_hooks(item.hooks, item.problem_desire or "")
         item.virality_breakdown = breakdown
@@ -317,27 +330,19 @@ class StrategyGenerator:
         return score, breakdown
 
     def _evaluate_hooks(self, hooks: list[str], audience: str) -> list[dict]:
-        audience_terms = {word for word in audience.split() if len(word) > 3}
-        rows = []
-        for hook in hooks:
-            text = str(hook).strip()
-            length = len(text)
-            clarity = 90 if 12 <= length <= 70 else 72
-            curiosity = 86 if any(token in text for token in ("؟", "لماذا", "كيف", "قبل", "خطأ", "سر")) else 72
-            relevance = 88 if any(term in text for term in audience_terms) else 78
-            credibility = 92 if not any(token in text for token in ("مضمون", "أكيد", "100%", "الأفضل في العالم")) else 45
-            total = round((clarity + curiosity + relevance + credibility) / 4)
-            rows.append(
-                {
-                    "text": text,
-                    "score": total,
-                    "clarity": clarity,
-                    "curiosity": curiosity,
-                    "relevance": relevance,
-                    "credibility": credibility,
-                }
-            )
-        return rows
+        idea = {
+            "title": "",
+            "problem": audience,
+            "problem_desire": audience,
+        }
+        brand_context = type("HookBrandContext", (), {"audience": audience})()
+        return [
+            {
+                "text": str(hook).strip(),
+                **self.hooks.evaluate_hook(str(hook), idea, brand_context),
+            }
+            for hook in hooks
+        ]
 
     def _content_type(self, platform: str, options: list[str], index: int) -> str:
         if platform in {"tiktok", "youtube"}:

@@ -504,6 +504,42 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .export-card .export-list li:last-child { border-bottom: 0; }
 .export-card .btn { margin-top: .2rem; }
 .export-card .notice { margin-top: 1rem; }
+.export-card-v3 {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(13, 148, 136, .18), transparent 55%),
+    linear-gradient(160deg, #0f1b33 0%, #13233f 55%, #0d9488 160%);
+  color: #f8fafc;
+  border: 1px solid rgba(13, 148, 136, .35);
+}
+.export-card-v3 .card-kicker { color: #99f6e4; }
+.export-card-v3 h2 { color: #fff; }
+.export-card-v3 .card-intro,
+.export-card-v3 .export-list li { color: rgba(248, 250, 252, .82); border-color: rgba(255,255,255,.12); }
+.export-card-v3 .export-badge {
+  position: absolute;
+  top: .9rem;
+  left: .9rem;
+  padding: .28rem .7rem;
+  border-radius: 999px;
+  background: #fbbf24;
+  color: #0f1b33;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.export-card-v3 .export-download-btn {
+  background: #f8fafc;
+  color: #0f1b33;
+  border: 0;
+}
+.export-card-v3 .export-download-btn:hover { background: #ccfbf1; }
+.export-card-v3 .notice {
+  background: rgba(15, 27, 51, .35);
+  border-color: rgba(255,255,255,.12);
+  color: rgba(248,250,252,.9);
+}
 .integration-list { display: grid; }
 .integration-list > div { display: grid; grid-template-columns: 38px 1fr auto; gap: .65rem; align-items: center; padding: .7rem 0; border-bottom: 1px solid var(--line); }
 .integration-list > div:last-child { border: 0; }

@@ -308,9 +308,10 @@ def build_user_workbook(user: User) -> BytesIO:
 
 
 def export_filename(user: User) -> str:
-    stamp = datetime.utcnow().strftime("%Y%m%d")
+    stamp = datetime.utcnow().strftime("%Y%m%d-%H%M")
     safe = "".join(ch for ch in (user.name or "contentforge") if ch.isalnum() or ch in "-_")
-    return f"contentforge-data-{safe or 'export'}-{stamp}.xlsx"
+    # V3 in the name so the user can tell they got the colored redesign.
+    return f"ContentForge-Export-V3-{safe or 'export'}-{stamp}.xlsx"
 
 
 # ---------------------------------------------------------------------------
@@ -323,11 +324,16 @@ def _sheet_guide(wb: Workbook, user: User, brands: int, strategies: int, items: 
     ws.sheet_view.rightToLeft = True
     ws.sheet_properties.tabColor = TEAL
 
-    _banner(ws, "ContentForge — تصدير بيانات المساحة", 6, TEAL)
+    _banner(ws, "ContentForge Export V3 — تنسيق ملوّن جديد", 6, TEAL)
     ws.merge_cells("A2:F2")
-    ws["A2"] = f"مرحباً {user.name} · تم التصدير {_dt(datetime.utcnow())}"
-    ws["A2"].font = Font(name="Calibri", size=12, color=MUTED, italic=True)
-    ws["A2"].alignment = Alignment(horizontal="right", readingOrder=2)
+    ws["A2"] = (
+        f"مرحباً {user.name} · نسخة التنسيق V3 · تم التصدير {_dt(datetime.utcnow())} "
+        "· إذا لم ترَ ورقة «دليل الملف» فأنت تفتح ملفًا قديمًا"
+    )
+    ws["A2"].font = Font(name="Calibri", size=12, color=NAVY, bold=True)
+    ws["A2"].fill = PatternFill("solid", fgColor=AMBER_SOFT)
+    ws["A2"].alignment = Alignment(horizontal="right", vertical="center", readingOrder=2)
+    ws.row_dimensions[2].height = 26
 
     # Summary cards row
     cards = [
@@ -574,19 +580,30 @@ def _write_sheet(
         ws.row_dimensions[2].height = 28
 
     header_fill = PatternFill("solid", fgColor=accent)
-    header_font = Font(name="Calibri", bold=True, color=WHITE, size=11)
+    header_font = Font(name="Calibri", bold=True, color=WHITE, size=12)
     for col_idx, header in enumerate(headers, start=1):
         cell = ws.cell(2, col_idx, header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        cell.border = _thin_border()
-    ws.row_dimensions[2].height = 28
+        cell.border = Border(
+            left=Side(style="thin", color=WHITE),
+            right=Side(style="thin", color=WHITE),
+            top=Side(style="thin", color=WHITE),
+            bottom=Side(style="medium", color=NAVY),
+        )
+    ws.row_dimensions[2].height = 32
 
     body_font = Font(name="Calibri", size=10, color=INK)
+    day_col = next((i for i, h in enumerate(headers, start=1) if h == "اليوم"), None)
+    brand_col = next((i for i, h in enumerate(headers, start=1) if h == "البراند"), None)
     for r_offset, row in enumerate(rows):
         r_idx = r_offset + 3
-        zebra = PatternFill("solid", fgColor=ROW_B if r_offset % 2 else ROW_A)
+        # Stronger zebra so color is obvious even in Google Sheets.
+        zebra = PatternFill(
+            "solid",
+            fgColor="E0F2FE" if r_offset % 2 else ROW_A,
+        )
         for c_idx, value in enumerate(row, start=1):
             cell = ws.cell(r_idx, c_idx, _cell(value))
             cell.font = body_font
@@ -598,6 +615,13 @@ def _write_sheet(
                 horizontal="right",
                 readingOrder=2,
             )
+            if brand_col and c_idx == brand_col:
+                cell.fill = PatternFill("solid", fgColor=VIOLET_SOFT)
+                cell.font = Font(name="Calibri", size=10, bold=True, color=VIOLET)
+            if day_col and c_idx == day_col and value not in ("", None):
+                cell.fill = PatternFill("solid", fgColor=TEAL_SOFT)
+                cell.font = Font(name="Calibri", size=12, bold=True, color=TEAL)
+                cell.alignment = Alignment(horizontal="center", vertical="center")
             _apply_accent(cell, value, (accent_cols or {}).get(c_idx))
 
         if tall:
@@ -648,14 +672,18 @@ def _write_sheet(
 
 
 def _banner(ws: Worksheet, text: str, col_count: int, accent: str) -> None:
-    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max(col_count, 1))
-    cell = ws.cell(1, 1, text)
-    cell.font = Font(name="Calibri", size=14, bold=True, color=WHITE)
+    cols = max(col_count, 1)
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=cols)
+    cell = ws.cell(1, 1, f"★ {text}")
+    cell.font = Font(name="Calibri", size=16, bold=True, color=WHITE)
     cell.fill = PatternFill("solid", fgColor=accent)
     cell.alignment = Alignment(horizontal="right", vertical="center", readingOrder=2)
-    for col in range(1, max(col_count, 1) + 1):
+    for col in range(1, cols + 1):
         ws.cell(1, col).fill = PatternFill("solid", fgColor=accent)
-    ws.row_dimensions[1].height = 34
+        ws.cell(1, col).border = Border(
+            bottom=Side(style="medium", color=NAVY)
+        )
+    ws.row_dimensions[1].height = 40
 
 
 def _apply_accent(cell, value: Any, kind: str | None) -> None:

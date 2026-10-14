@@ -20,6 +20,7 @@ from flask_login import current_user, login_required
 from app.extensions import db
 from app.models import Brand, ContentItem
 from app.services.gpt_ideas import GPTGenerationError
+from app.services.key_vault import decrypt_api_key, encrypt_api_key
 from app.services.playbook import SOURCE_CATALOG
 from app.services.strategy import StrategyGenerator
 
@@ -31,8 +32,12 @@ OBJECTIVES = {"awareness", "leads", "sales", "community"}
 
 
 def _strategy_generator() -> StrategyGenerator:
+    user_api_key = decrypt_api_key(
+        current_user.openai_api_key,
+        current_app.config["SECRET_KEY"],
+    )
     api_key = (
-        (current_user.openai_api_key or "").strip()
+        user_api_key
         or (current_app.config.get("OPENAI_API_KEY") or "").strip()
     )
     return StrategyGenerator(
@@ -334,6 +339,26 @@ def studio_page():
 @login_required
 def settings_page():
     if request.method == "POST":
+        action = request.form.get("action") or "profile"
+        if action == "save_openai_key":
+            api_key = (request.form.get("openai_api_key") or "").strip()
+            if len(api_key) < 20:
+                flash("مفتاح OpenAI قصير أو غير صالح.", "error")
+            else:
+                current_user.openai_api_key = encrypt_api_key(
+                    api_key,
+                    current_app.config["SECRET_KEY"],
+                )
+                db.session.commit()
+                flash("تم حفظ مفتاح OpenAI مشفرًا لحسابك.", "success")
+            return redirect(url_for("main.settings_page"))
+
+        if action == "clear_openai_key":
+            current_user.openai_api_key = None
+            db.session.commit()
+            flash("تم حذف مفتاح OpenAI الخاص بحسابك.", "success")
+            return redirect(url_for("main.settings_page"))
+
         name = (request.form.get("name") or "").strip()
         if len(name) >= 2:
             current_user.name = name
@@ -344,10 +369,16 @@ def settings_page():
         return redirect(url_for("main.settings_page"))
 
     brand = _active_brand()
+    user_openai_key = decrypt_api_key(
+        current_user.openai_api_key,
+        current_app.config["SECRET_KEY"],
+    )
+    server_openai_key = (current_app.config.get("OPENAI_API_KEY") or "").strip()
     integration_state = {
-        "openai": bool(
-            current_user.openai_api_key
-            or current_app.config.get("OPENAI_API_KEY")
+        "openai": bool(user_openai_key or server_openai_key),
+        "openai_user_key": bool(user_openai_key),
+        "openai_source": (
+            "الحساب" if user_openai_key else "الخادم" if server_openai_key else None
         ),
         "openai_model": current_app.config.get("OPENAI_MODEL", "gpt-4o"),
         "youtube": bool(current_app.config.get("YOUTUBE_API_KEY")),

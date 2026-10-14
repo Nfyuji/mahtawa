@@ -10,21 +10,53 @@
     <span class="card-kicker">الحساب</span><h2>بياناتك</h2>
     <form method="post" class="stack-form compact-form">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="profile">
       <div class="field"><label for="name">الاسم</label><input id="name" name="name" value="{{ current_user.name }}" required></div>
       <div class="field"><label>البريد</label><input value="{{ current_user.email }}" disabled></div>
       <button class="btn" type="submit">حفظ الاسم</button>
     </form>
   </section>
 
-  <section class="card">
+  <section class="card api-key-card">
+    <span class="card-kicker">GPT API</span><h2>مفتاح OpenAI</h2>
+    <p class="card-intro">
+      {% if integration_state.openai_user_key %}
+        يوجد مفتاح مشفّر محفوظ لهذا الحساب. اكتب مفتاحًا جديدًا فقط إذا أردت استبداله.
+      {% elif integration_state.openai_source == 'الخادم' %}
+        يوجد مفتاح عام على الخادم. يمكنك إضافة مفتاح خاص لهذا الحساب ليُستخدم بدلًا منه.
+      {% else %}
+        أضف مفتاحك لتفعيل توليد 30 فكرة وسيناريو عبر GPT.
+      {% endif %}
+    </p>
+    <form method="post" class="stack-form compact-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="save_openai_key">
+      <div class="field">
+        <label for="openai_api_key">مفتاح API</label>
+        <input id="openai_api_key" name="openai_api_key" type="password" autocomplete="off" placeholder="sk-..." required minlength="20">
+        <small>لن يظهر المفتاح مرة أخرى بعد الحفظ.</small>
+      </div>
+      <button class="btn" type="submit">حفظ المفتاح مشفّرًا</button>
+    </form>
+    {% if integration_state.openai_user_key %}
+    <form method="post" class="compact-form" onsubmit="return confirm('حذف مفتاح OpenAI المحفوظ لهذا الحساب؟')">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="clear_openai_key">
+      <button class="btn btn-ghost" type="submit">حذف المفتاح</button>
+    </form>
+    {% endif %}
+    <div class="notice notice-neutral compact"><strong>الأمان</strong><span>يُشفّر المفتاح قبل تخزينه، ولا يُرسل للمتصفح بعد الحفظ. لا تلصقه في GitHub.</span></div>
+  </section>
+
+  <section class="card integration-card">
     <span class="card-kicker">حالة النظام</span><h2>التكاملات</h2>
     <div class="integration-list">
-      <div><span class="integration-icon">AI</span><p><b>توليد OpenAI</b><small>{% if integration_state.openai %}متصل وفعّال. إنشاء الخطة يولّد 30 فكرة وسيناريو عبر {{ integration_state.openai_model }}.{% else %}غير موصول. أضف OPENAI_API_KEY إلى متغيرات بيئة الخادم لتفعيل GPT.{% endif %}</small></p><em class="{{ 'connected' if integration_state.openai else '' }}">{{ 'فعّال' if integration_state.openai else 'غير موصول' }}</em></div>
+      <div><span class="integration-icon">AI</span><p><b>توليد OpenAI</b><small>{% if integration_state.openai %}متصل عبر {{ integration_state.openai_source }}. إنشاء الخطة يولّد 30 فكرة وسيناريو عبر {{ integration_state.openai_model }}.{% else %}غير موصول. أضف المفتاح من البطاقة المجاورة.{% endif %}</small></p><em class="{{ 'connected' if integration_state.openai else '' }}">{{ 'فعّال' if integration_state.openai else 'غير موصول' }}</em></div>
       <div><span class="integration-icon">YT</span><p><b>YouTube Data</b><small>{% if integration_state.youtube %}مفتاح الخادم موجود؛ جلب الاتجاهات الحية يحتاج موصلًا واختبارًا منفصلًا.{% else %}غير موصول. لا نعرض مشاهدات أو ترندات وهمية.{% endif %}</small></p><em class="{{ 'connected' if integration_state.youtube else '' }}">{{ 'مهيأ' if integration_state.youtube else 'غير موصول' }}</em></div>
       <div><span class="integration-icon">TT</span><p><b>TikTok Creative Center</b><small>تحقق يدوي عبر الموقع الرسمي؛ لا نفترض وجود API عام للترندات.</small></p><em>يدوي</em></div>
       <div><span class="integration-icon">GT</span><p><b>Google Trends</b><small>روابط تحقق يدوية. القيم النسبية ليست حجم بحث مطلقًا.</small></p><em>يدوي</em></div>
     </div>
-    <div class="notice notice-neutral compact"><strong>إدارة آمنة للمفتاح</strong><span>في Render أضف OPENAI_API_KEY من Environment. لا تضع المفتاح في GitHub أو داخل ملفات المشروع.</span></div>
+    <div class="notice notice-neutral compact"><strong>الأولوية</strong><span>المفتاح الخاص بالحساب يُستخدم أولًا، ثم مفتاح الخادم إن وُجد.</span></div>
   </section>
 </div>
 
